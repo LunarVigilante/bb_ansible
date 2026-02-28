@@ -96,6 +96,12 @@ setup_repo() {
         git clone -b "${REPO_BRANCH}" "${REPO_URL}" "${INSTALL_DIR}"
     fi
     cd "${INSTALL_DIR}"
+
+    # Re-exec from the on-disk copy so any fixes in the repo take effect
+    if [[ "${BB_REEXEC:-}" != "1" ]]; then
+        log_info "Re-executing installer from updated repo..."
+        BB_REEXEC=1 BB_INSTALL_DIR="${INSTALL_DIR}" exec bash "${INSTALL_DIR}/install.sh"
+    fi
 }
 
 # --- Create config files from templates (always overwrite — install.sh is one-time bootstrap) ---
