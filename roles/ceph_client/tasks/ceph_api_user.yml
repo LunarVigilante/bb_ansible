@@ -39,10 +39,13 @@
         BASE_NAME="{{ node_name }}"
         TARGET_NAME="$BASE_NAME"
         COUNTER=1
-        
+
         while true; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.${TARGET_NAME}" -H "Authorization: Bearer {{ ceph_jwt }}" -H "Accept: application/vnd.ceph.api.v1.0+json" -k)
-            
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                -X GET "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.${TARGET_NAME}" \
+                -H "Authorization: Bearer {{ ceph_jwt }}" \
+                -H "Accept: application/vnd.ceph.api.v1.0+json" -k)
+
             if [ "$HTTP_STATUS" == "404" ] || [ "$HTTP_STATUS" == "500" ]; then
                 # User does not exist, safe to grab
                 echo "$TARGET_NAME"

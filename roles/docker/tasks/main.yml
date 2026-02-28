@@ -35,7 +35,7 @@
     state: present
   when: ansible_os_family == "Debian"
 
-- name: Install Docker {{ docker_version }} (Ubuntu)
+- name: Install Docker (Ubuntu) {{ docker_version }}
   ansible.builtin.apt:
     name:
       - "docker-ce={{ docker_version }}*"

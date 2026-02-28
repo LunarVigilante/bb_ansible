@@ -109,5 +109,5 @@
     daemon_reload: true
 
 - name: Mount all filesystems
-  ansible.builtin.command: mount -a
+  ansible.builtin.command: mount -a  # noqa: command-instead-of-module
   changed_when: true

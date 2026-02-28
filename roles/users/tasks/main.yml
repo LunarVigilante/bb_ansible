@@ -51,6 +51,7 @@
     dest: "/home/admin/{{ item }}"
     owner: admin
     group: admin
+    mode: "0644"
     remote_src: true
   loop:
     - .zshrc

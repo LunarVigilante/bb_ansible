@@ -73,4 +73,3 @@
     state: present
     insertafter: EOF
   when: vault_discord_webhook_general | default('') | length > 0
-

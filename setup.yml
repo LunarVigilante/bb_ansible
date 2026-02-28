@@ -42,7 +42,7 @@
     - name: Load node-specific cluster apps
       ansible.builtin.include_vars:
         file: "host_vars/{{ node_name }}.yml"
-      ignore_errors: true
+      failed_when: false
       tags: ['always']
 
     # --- Remap account vars to vault-style names for role compatibility ---
