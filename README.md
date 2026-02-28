@@ -34,16 +34,21 @@ When building a fresh BB cluster from scratch, you must provision the nodes in a
 ### Step 1: Pre-Flight Credentials
 Because BB is designed for zero-touch deployments, you must define your cluster's identities and API keys in a `.env` file *before* executing the installer. The installer will automatically detect it and inject these into the cluster.
 
-1. Download the sample template to your root directory:
+1. Log in as root on your first node and install `nano` (fresh Hetzner servers don't have it):
+   ```bash
+   apt-get update && apt-get install -y nano    # Debian/Ubuntu
+   # or: pacman -Sy nano                        # Arch
+   ```
+2. Download the environment template:
    ```bash
    curl -sO https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/.env.sample
    mv .env.sample .env
    ```
-2. Open the file in a text editor:
+3. Open the file:
    ```bash
    nano .env
    ```
-3. Fill in the required variables. **(Do NOT use quotes around your values in the `.env` file.)**
+4. Fill in the required variables. **(Do NOT use quotes around your values in the `.env` file.)**
    *   `BB_NODE_TYPE=service`                      *(Required: Set this to service for the first node)*
    *   `BB_ADMIN_PASSWORD=your_secure_password`    *(Required: The master password you want for your cluster dashboard)*
    *   `BB_CF_EMAIL=you@example.com`               *(Required: Cloudflare email for SSL certs)*
@@ -52,7 +57,7 @@ Because BB is designed for zero-touch deployments, you must define your cluster'
    *   `BB_CEPH_DASHBOARD_USER=admin`              *(Required: Ceph admin username)*
    *   `BB_CEPH_DASHBOARD_PASSWORD=ceph_pass`      *(Required: Ceph admin password)*
    *   *(Fill in any other optional API keys you have, such as Discord webhooks or Media APIs. See `accounts.yml.default` for explanations).*
-4. Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+5. Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 *(Note: Keep this `.env` file handy. You will securely copy it to the other nodes before you bootstrap them.)*
 
 ### Step 2: Provision the Service Node
