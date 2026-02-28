@@ -49,6 +49,31 @@ set_val() {
     fi
 }
 
+# Injects an SSH key into the group_vars/all.yml dictionary cleanly
+inject_ssh_key() {
+    local list_name="$1"
+    local key_string="$2"
+    local key_label="$3"
+
+    if [[ -z "${key_string}" ]]; then return; fi
+    
+    # Strip wrapping quotes if accidentally entered
+    key_string=$(echo "${key_string}" | sed 's/^"//;s/"$//')
+
+    local file="${BB_DIR}/group_vars/all.yml"
+
+    # Use awk to find the exact array block and append a new dictionary entry at the top of the block
+    awk -v list="${list_name}:" -v name="\"${key_label}\"" -v key="\"${key_string}\"" '
+    $0 == list {
+        print
+        print "  - name: " name
+        print "    key: " key
+        next
+    }
+    { print }
+    ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+}
+
 # Ensure templates exist
 if [[ ! -f "${BB_DIR}/settings.yml" ]]; then cp "${BB_DIR}/settings.yml.default" "${BB_DIR}/settings.yml"; fi
 if [[ ! -f "${BB_DIR}/accounts.yml" ]]; then cp "${BB_DIR}/accounts.yml.default" "${BB_DIR}/accounts.yml"; fi
@@ -75,13 +100,23 @@ fi
 set_val "settings.yml" "secondary_drive" "${BB_SECONDARY_DRIVE:-none}"
 
 # =============================================================================
-# Apply accounts.yml
+# Apply accounts.yml & global identites
 # =============================================================================
 
 # Globals
 set_val "accounts.yml" "admin_password" "${BB_ADMIN_PASSWORD:-}"
 set_val "accounts.yml" "cf_email" "${BB_CF_EMAIL:-}"
 set_val "accounts.yml" "cf_api_token" "${BB_CF_API_TOKEN:-}"
+
+# SSH Identities
+if [[ -n "${BB_ADMIN_SSH_KEY:-}" ]]; then
+    inject_ssh_key "ssh_authorized_keys" "${BB_ADMIN_SSH_KEY}" "Env_Admin_Key"
+    log_info "Injected Headless Admin SSH Key"
+fi
+if [[ -n "${BB_ROOT_SSH_KEY:-}" ]]; then
+    inject_ssh_key "ssh_root_keys" "${BB_ROOT_SSH_KEY}" "Env_Root_Key"
+    log_info "Injected Headless Root SSH Key"
+fi
 
 # Media Service
 set_val "accounts.yml" "plex_token" "${BB_PLEX_TOKEN:-}"

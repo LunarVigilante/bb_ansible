@@ -59,10 +59,33 @@ set_val() {
     local is_bool="${4:-false}"
     
     if [[ "${is_bool}" == "true" ]]; then
-        sed -i "s|^${key}:.*|${key}: ${val}|" "${BB_DIR}/${file}"
-    else
         sed -i "s|^${key}:.*|${key}: \"${val}\"|" "${BB_DIR}/${file}"
     fi
+}
+
+# Injects an SSH key into the group_vars/all.yml dictionary cleanly
+inject_ssh_key() {
+    local list_name="$1"
+    local key_string="$2"
+    local key_label="$3"
+
+    if [[ -z "${key_string}" ]]; then return; fi
+    
+    # Strip wrapping quotes if accidentally entered
+    key_string=$(echo "${key_string}" | sed 's/^"//;s/"$//')
+
+    local file="${BB_DIR}/group_vars/all.yml"
+
+    # Use awk to find the exact array block and append a new dictionary entry at the top of the block
+    awk -v list="${list_name}:" -v name="\"${key_label}\"" -v key="\"${key_string}\"" '
+    $0 == list {
+        print
+        print "  - name: " name
+        print "    key: " key
+        next
+    }
+    { print }
+    ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
 
 # Generic prompter
@@ -165,6 +188,23 @@ read -r hdd
 echo -e "\n${CYAN}━━━ Phase 2: Core Credentials ━━━${NC}"
 
 prompt "accounts.yml" "admin_password" "Linux Admin User Password ${RED}*${NC}"
+
+echo -e "\n${BOLD}SSH Authorized Keys (Optional)${NC}"
+ask "Paste an ssh-ed25519 or ssh-rsa key for the Admin User (Blank to skip):"
+read -r ssh_admin
+if [[ -n "${ssh_admin}" ]]; then
+    inject_ssh_key "ssh_authorized_keys" "${ssh_admin}" "Wizard_Admin_Key"
+    log_ok "Injected Admin SSH Key"
+fi
+
+ask "Paste an ssh-ed25519 or ssh-rsa key for Direct Root Access (Blank to skip):"
+read -r ssh_root
+if [[ -n "${ssh_root}" ]]; then
+    inject_ssh_key "ssh_root_keys" "${ssh_root}" "Wizard_Root_Key"
+    log_ok "Injected Root SSH Key"
+fi
+
+echo -e "\n${BOLD}Cloudflare Integrations${NC}"
 prompt "accounts.yml" "cf_email" "Cloudflare ACME Email ${RED}*${NC}"
 prompt "accounts.yml" "cf_api_token" "Cloudflare API Token ${RED}*${NC}"
 
