@@ -659,11 +659,22 @@ do_update() {
     log_info "Pulling latest from git..."
     cd "${BB_DIR}"
 
-    local current_hash
+    local current_hash stashed=false
     current_hash=$(git rev-parse HEAD)
+
+    # Stash any local edits (settings.yml, accounts.yml, etc.)
+    if ! git diff --quiet 2>/dev/null; then
+        git stash --quiet
+        stashed=true
+    fi
 
     git fetch origin
     git pull origin "$(git rev-parse --abbrev-ref HEAD)"
+
+    # Restore local edits
+    if [[ "${stashed}" == "true" ]]; then
+        git stash pop --quiet 2>/dev/null || log_warn "Merge conflict — run: git stash pop"
+    fi
 
     local new_hash
     new_hash=$(git rev-parse HEAD)
