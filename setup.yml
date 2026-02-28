@@ -112,9 +112,9 @@
           │  Media Service:  {{ media_service }}
           │  Node Type:      {{ node_type }}
           │  10Gbps:         {{ is_10g_node }}
-          │  Secondary Drive:{{ secondary_drive }}
+          │  LVM Ignore:     {{ lvm_ignore_drives | default('none') }}
           │  Emby Tier:      {{ emby_tier }}
-          │  OS Family:      {{ ansible_os_family }}
+          │  OS Family:      {{ ansible_facts['os_family'] }}
           │  Timezone:       {{ timezone }}
           └─────────────────────────────────────┘
       tags: ['always']
