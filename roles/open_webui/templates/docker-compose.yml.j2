@@ -45,7 +45,7 @@ services:
       - AIOHTTP_CLIENT_TIMEOUT=600
       - KEEPALIVE_TIMEOUT=600
       - AIOHTTP_CLIENT_POOL_SIZE=100
-      - GLOBAL_LOG_LEVEL=DEBUG
+      - GLOBAL_LOG_LEVEL=INFO
       - OAUTH_CLIENT_ID={{ vault_openwebui_oauth_client_id }}
       - OAUTH_CLIENT_SECRET={{ vault_openwebui_oauth_client_secret }}
       - OAUTH_PROVIDER_NAME=authentik

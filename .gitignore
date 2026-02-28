@@ -2,6 +2,27 @@
 accounts.yml
 settings.yml
 
+# Headless provisioning secrets
+.env
+.env.*
+!.env.example
+
+# Ansible vault files
+*.vault
+*.vault.yml
+vault_pass*
+
+# SSH private keys
+*.pem
+id_rsa
+id_ed25519
+
+# ACME / TLS certificates
+acme.json
+*.key
+*.crt
+
 # Ansible artifacts
 *.retry
 *.bak
+

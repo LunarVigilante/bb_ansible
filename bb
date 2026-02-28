@@ -561,6 +561,19 @@ do_audit() {
     fi
     echo ""
 
+    # Check 4: Debug mode in production templates
+    echo -e "${CYAN}━━━ Debug Mode Detection ━━━${NC}"
+    local debug_hits
+    debug_hits=$(grep -rlE 'LOG_LEVEL.*=.*DEBUG|log_level.*debug' roles/ --include='*.j2' 2>/dev/null | wc -l)
+    if [[ "${debug_hits}" -gt 0 ]]; then
+        log_warn "${debug_hits} template(s) have DEBUG log levels (should be INFO/WARN in production):"
+        grep -rlE 'LOG_LEVEL.*=.*DEBUG|log_level.*debug' roles/ --include='*.j2' 2>/dev/null | sed 's/^/    /'
+        issues=$((issues + debug_hits))
+    else
+        log_ok "No debug log levels found in templates."
+    fi
+    echo ""
+
     # Summary
     echo -e "${MAGENTA}━━━ Audit Summary ━━━${NC}"
     if [[ ${issues} -eq 0 ]]; then
