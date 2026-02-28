@@ -100,11 +100,11 @@
 - name: Deploy ZSH dotfiles to root
   ansible.builtin.template:
     src: "{{ item }}.j2"
-    dest: "/root/{{ item }}"
+    dest: "/root/.{{ item }}"
     owner: root
     group: root
     mode: "0644"
   loop:
-    - .zshrc
-    - .p10k.zsh
-    - .bash_aliases
+    - zshrc
+    - p10k.zsh
+    - bash_aliases
