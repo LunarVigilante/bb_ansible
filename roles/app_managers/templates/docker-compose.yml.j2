@@ -46,7 +46,8 @@ services:
       - PGID=1000
     volumes:
       - /opt/appdata/{{ instance.name }}:/config
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOCKER_HOST=tcp://socket-proxy-traefik:2375
     networks:
       - proxy
 {% if instance.port is defined %}
@@ -161,8 +162,8 @@ services:
     restart: unless-stopped
     cgroup_parent: kronos.slice
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER={{ tracearr_db_user | default('tracearr') }}
+      - POSTGRES_PASSWORD={{ tracearr_db_password }}
       - POSTGRES_DB=tracearr
     volumes:
       - /opt/appdata/tracearr/db:/var/lib/postgresql/data

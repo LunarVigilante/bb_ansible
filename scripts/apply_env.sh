@@ -178,6 +178,13 @@ set_val "accounts.yml" "openwebui_openrouter_api_key" "${BB_OPENWEBUI_OPENROUTER
 set_val "accounts.yml" "openwebui_tavily_api_key" "${BB_OPENWEBUI_TAVILY_API_KEY:-}"
 set_val "accounts.yml" "openwebui_google_api_key" "${BB_OPENWEBUI_GOOGLE_API_KEY:-}"
 
+# Tracearr
+if [[ -z "${BB_TRACEARR_DB_PASSWORD:-}" || "${BB_TRACEARR_DB_PASSWORD:-}" == "CHANGE_ME"* ]]; then
+    BB_TRACEARR_DB_PASSWORD="$(openssl rand -hex 16)"
+    log_info "Auto-generated secure password for Tracearr Postgres"
+fi
+set_val "accounts.yml" "tracearr_db_password" "${BB_TRACEARR_DB_PASSWORD}"
+
 # Base Domain
 set_val "accounts.yml" "base_domain" "${BB_BASE_DOMAIN:-}"
 

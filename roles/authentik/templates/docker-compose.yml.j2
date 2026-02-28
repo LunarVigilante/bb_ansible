@@ -55,8 +55,8 @@ services:
     env_file:
       - .env
     ports:
-      - "{{ authentik_port_http }}:9005"
-      - "{{ authentik_port_https }}:9445"
+      - "127.0.0.1:{{ authentik_port_http }}:9005"
+      - "127.0.0.1:{{ authentik_port_https }}:9445"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.authentik.rule=Host(`{{ authentik_domain }}`)"
@@ -87,7 +87,6 @@ services:
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
     user: root
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - /opt/authentik/media:/media
       - /opt/authentik/certs:/certs
       - /opt/authentik/custom-templates:/templates
