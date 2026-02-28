@@ -47,7 +47,7 @@
 
     - name: Build yay package
       ansible.builtin.command:
-        cmd: makepkg -s --noconfirm
+        cmd: makepkg -sf --noconfirm
         chdir: /tmp/yay-bin
       changed_when: true
 
