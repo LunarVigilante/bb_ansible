@@ -1,38 +1,59 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Blackbeard Gluetun-Plex Watcher
-# Automatically restarts dependent Plex containers whenever a Gluetun 
+# Automatically restarts dependent payloads whenever a Gluetun 
 # VPN container restarts, preventing lost network connectivity.
 # =============================================================================
 
-echo "Starting Gluetun Watcher. Listening for 'start' and 'die' events..."
+DISCORD_WEBHOOK="{{ discord_webhook_media | default('') }}"
+NODE_NAME="{{ node_name }}"
 
-# Listen to the native Docker event stream for container starts and deaths
-docker events --filter 'event=start' --filter 'event=die' --format '{{"{{"}}.Status{{"}}"}} {{"{{"}}.Actor.Attributes.name{{"}}"}}' | while read -r event_type container_name; do
-    # Check if the event involves a Gluetun container
-    if [[ "$container_name" == gluetun-* ]]; then
-        
-        if [[ "$event_type" == "die" ]]; then
-            echo "[$(date -Iseconds)] [ALERT] Gluetun container died: $container_name. Autonomous healing initiated..."
-            # Force target tunnel to start. This immediately triggers a 'start' event, catching the next logic block.
-            docker start "$container_name" 
+send_alert() {
+    local message="$1"
+    echo "[$(date -Iseconds)] $message"
+    if [[ -n "$DISCORD_WEBHOOK" ]]; then
+        # Fire-and-forget Discord/Notifiarr webhook
+        curl -s -H "Content-Type: application/json" -d "{\"content\": \"**[Gluetun Watcher | $NODE_NAME]** $message\"}" "$DISCORD_WEBHOOK" >/dev/null &
+    fi
+}
+
+send_alert "🟢 Daemon initialized. Listening to native Docker events stream..."
+
+# Infinite loop completely immunizes the watcher against the Docker daemon restarting and breaking the stdout pipe
+while true; do
+    docker events --filter 'event=start' --filter 'event=die' --format '{{"{{"}}.Status{{"}}"}} {{"{{"}}.Actor.Attributes.name{{"}}"}}' | while read -r event_type container_name; do
+        if [[ "$container_name" == gluetun-* ]]; then
             
-        elif [[ "$event_type" == "start" ]]; then
-            echo "[$(date -Iseconds)] Detected Gluetun array online: $container_name"
-            
-            # Identify any Plex (or other) containers dynamically bound to this specific Gluetun network namespace
-            # Network mode format is: container:gluetun-X-Y
-            dependent_containers=$(docker ps -a --filter "network=container:$container_name" --format '{{"{{"}}.Names{{"}}"}}')
-            
-            if [ -n "$dependent_containers" ]; then
-                for dependent in $dependent_containers; do
-                    echo "[$(date -Iseconds)] Restarting dependent payload to bind to new network interface: $dependent"
-                    # Restart the container so it successfully re-attaches to the newly initialized Gluetun network stack
-                    docker restart "$dependent"
-                done
-            else
-                echo "[$(date -Iseconds)] No dependent payloads mapped to $container_name"
+            if [[ "$event_type" == "die" ]]; then
+                # Passively log the death and intercept the exit parameters. 
+                # We specifically NO LONGER force `docker start` here to prevent violently locking out 
+                # administrators who explicitly ran `docker stop` for maintenance. 
+                # The container's native `restart: unless-stopped` compose policy will autonomously handle organic crashes.
+                exit_code=$(docker inspect -f '{{"{{"}}.State.ExitCode{{"}}"}}' "$container_name" 2>/dev/null || echo "Unknown")
+                send_alert "⚠️ Gluetun array offline: \`$container_name\` (Exit Code: $exit_code)"
+                
+            elif [[ "$event_type" == "start" ]]; then
+                send_alert "🔄 Gluetun array online: \`$container_name\`. Scanning for dependent targets..."
+                
+                # Identify any payloads dynamically attached to this specific Gluetun network namespace
+                dependent_containers=$(docker ps -a --filter "network=container:$container_name" --format '{{"{{"}}.Names{{"}}"}}')
+                
+                if [ -n "$dependent_containers" ]; then
+                    for dependent in $dependent_containers; do
+                        echo "[$(date -Iseconds)] Restarting dependent payload to rebind network interface: $dependent"
+                        docker restart "$dependent" >/dev/null
+                    done
+                    # Format as a single-line string for Discord webhook ingestion
+                    deps_string=$(echo $dependent_containers | tr '\n' ' ')
+                    send_alert "✅ Successfully remapped and restarted dependent cluster: \`$deps_string\`"
+                else
+                    echo "[$(date -Iseconds)] No dependent payloads mapped to $container_name currently."
+                fi
             fi
         fi
-    fi
+    done
+    
+    # If the pipe shatters (e.g. `systemctl restart docker`), the daemon survives, sleeps briefly, and rebuilds the event stream
+    echo "[$(date -Iseconds)] [WARN] Docker events pipe severed. Rebuilding stream in 5 seconds..."
+    sleep 5
 done
