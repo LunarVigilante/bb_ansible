@@ -75,6 +75,8 @@ declare -A TAG_DESCRIPTIONS=(
     ["app_managers"]="Ecosystem Managers (Autoscan, Tracearr, Unpackerr)"
     ["open_webui"]="Open WebUI (AI Stack) — Service node only"
     ["enclosed"]="Enclosed (Secure File Sharing) — Service node only"
+    ["validate"]="Pre-flight: Ansible syntax check + dry-run --check mode"
+    ["audit"]="Security audit: scan for exposed secrets, weak permissions, misconfigs"
 )
 
 # What "core" expands to (includes lvm/ethtool — they self-skip via when:):
@@ -487,6 +489,87 @@ do_reconfigure() {
 }
 
 
+do_validate() {
+    log_info "Running IaC pre-flight security validation..."
+    echo ""
+
+    cd "${BB_DIR}"
+
+    # Step 1: Ansible syntax check
+    echo -e "${CYAN}━━━ Syntax Check ━━━${NC}"
+    if /usr/bin/ansible-playbook setup.yml --syntax-check 2>&1; then
+        log_ok "Syntax validation passed."
+    else
+        log_error "Syntax validation failed — fix errors before deploying."
+        exit 1
+    fi
+    echo ""
+
+    # Step 2: Dry-run (--check + --diff)
+    echo -e "${CYAN}━━━ Dry-Run (--check mode) ━━━${NC}"
+    log_info "Simulating full deployment without making changes..."
+    echo ""
+    /usr/bin/ansible-playbook setup.yml --check --diff 2>&1 | tail -20
+    log_ok "Dry-run complete. Review the diff output above."
+}
+
+do_audit() {
+    log_info "Running security configuration audit..."
+    echo ""
+    local issues=0
+
+    cd "${BB_DIR}"
+
+    # Check 1: CHANGE_ME placeholders
+    echo -e "${CYAN}━━━ Credential Placeholders ━━━${NC}"
+    if [[ -f accounts.yml ]] && grep -cq "CHANGE_ME" accounts.yml; then
+        local count
+        count=$(grep -c "CHANGE_ME" accounts.yml)
+        log_warn "${count} CHANGE_ME placeholder(s) found in accounts.yml"
+        issues=$((issues + count))
+    else
+        log_ok "No CHANGE_ME placeholders found."
+    fi
+    echo ""
+
+    # Check 2: File permissions
+    echo -e "${CYAN}━━━ Credential File Permissions ━━━${NC}"
+    for f in accounts.yml settings.yml; do
+        if [[ -f "${f}" ]]; then
+            local perms
+            perms=$(stat -c '%a' "${f}" 2>/dev/null || stat -f '%Lp' "${f}" 2>/dev/null)
+            if [[ "${perms}" != "600" ]]; then
+                log_warn "${f} has permissions ${perms} (should be 600)"
+                issues=$((issues + 1))
+            else
+                log_ok "${f} is locked (0600)"
+            fi
+        fi
+    done
+    echo ""
+
+    # Check 3: Docker socket exposure
+    echo -e "${CYAN}━━━ Docker Socket Exposure ━━━${NC}"
+    local socket_hits
+    socket_hits=$(grep -rl '/var/run/docker.sock' roles/ --include='*.j2' --include='*.yml' 2>/dev/null | wc -l)
+    if [[ "${socket_hits}" -gt 0 ]]; then
+        log_warn "${socket_hits} file(s) still reference /var/run/docker.sock directly:"
+        grep -rl '/var/run/docker.sock' roles/ --include='*.j2' --include='*.yml' 2>/dev/null | sed 's/^/    /'
+        issues=$((issues + socket_hits))
+    else
+        log_ok "No direct Docker socket mounts found."
+    fi
+    echo ""
+
+    # Summary
+    echo -e "${MAGENTA}━━━ Audit Summary ━━━${NC}"
+    if [[ ${issues} -eq 0 ]]; then
+        log_ok "All checks passed. No issues found."
+    else
+        log_warn "${issues} issue(s) found. Review and remediate above."
+    fi
+}
+
 do_logs() {
     if [[ ! -d "${LOG_DIR}" ]]; then
         log_warn "No logs yet. Run 'bb install' first."
@@ -770,6 +853,14 @@ case "${COMMAND}" in
     health|check)
         show_banner
         do_health "$@"
+        ;;
+    validate)
+        show_banner
+        do_validate
+        ;;
+    audit)
+        show_banner
+        do_audit
         ;;
     commands)
         show_banner

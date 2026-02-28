@@ -85,7 +85,10 @@
         },
         "live-restore": true,
         "storage-driver": "overlay2",
-        "cgroup-parent": "kronos.slice"
+        "cgroup-parent": "kronos.slice",
+        "no-new-privileges": true,
+        "userland-proxy": false,
+        "icc": false
       }
     dest: /etc/docker/daemon.json
     owner: root
