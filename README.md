@@ -3,48 +3,75 @@
 Automated provisioning for Blackbeard Media share & appbox nodes on Hetzner.  
 Inspired by [Saltbox](https://docs.saltbox.dev/) — curl, configure, install.
 
-## Quick Start
+## Node Architecture (The 3 Classes)
 
-### 1. Bootstrap the Node
-Blackbeard operates on top of clean, minimal OS installations. If you are starting from a raw image, you must first switch to the root user and pull the deployment codebase using your native package manager.
+Blackbeard Media is a distributed, multi-tenant ecosystem. It does not run on a single monolithic server. Instead, roles are mathematically split across three distinct classes of nodes, all tied together by a central Ceph storage fabric.
 
-```bash
-# Switch to root (if not already)
-su -
+### 1. The Service Node (`node_type: service`)
+*   **The Brain of the Cluster:** This is your primary control plane. You typically only need **one** service node in your entire cluster.
+*   **What it runs:** Single Sign-On (Authentik), Global Reverse Proxy (Traefik), AI/LLM interfaces (Open WebUI), secure file drop mechanisms (Enclosed), and central monitoring agents (Beszel Hub).
+*   **Storage Access:** Needs access to the global Ceph filesystem (`/bbfs`) strictly for database backups.
+*   **Hardware Tier:** Low/Medium (4 Cores, 8GB RAM). Highly dependent on Authentik load and whether you run AI models locally. 
 
-# 1. Update packages and install Git
-# For Debian/Ubuntu (apt):
-apt-get update && apt-get install -y git sudo
-# For Arch Linux (pacman):
-# pacman -Syu --noconfirm git sudo
-# For CentOS/RHEL/Alma (dnf):
-# dnf install -y git sudo
+### 2. The Feeder Node (`node_type: feeder`)
+*   **The Ingestion Engine:** This node is responsible for finding, downloading, unpacking, and organizing media. It does the heavy lifting of pirating content.
+*   **What it runs:** The entire *Arr ecosystem (Sonarr, Radarr, Prowlarr, etc.), download clients (qBittorrent, SABnzbd, Cross-Seed), and ecosystem managers (Autoscan).
+*   **Storage Access:** Needs massive, high-speed read/write access to the Ceph `/data` and `/media` mounts to dump newly acquired files.
+*   **Hardware Tier:** Medium/High (8 Cores, 16GB+ RAM, fast local NVMe cache). 
 
-# 2. Create the deploy directory
-mkdir -p /srv/git
-cd /srv/git
+### 3. The Media Node (`node_type: share` or `appbox`)
+*   **The Delivery Edge:** This is what your users connect to. You can horizontally scale these infinitely (e.g., `user01-appbox`, `public-share-03`).
+*   **What it runs:** Media servers (Plex, Emby, Jellyfin), VPN tunnels (Gluetun), and edge-based Autoscan targets.
+*   **Storage Access:** Strictly **Read-Only** access to the Ceph `/media` mount. This insulates your core library from users accidentally deleting files via an Emby client bug. It gets read/write access to its own isolated application folder on the array.
+*   **Hardware Tier:** High (8+ Cores, QuickSync/GPU for transcoding, 10Gbps networking).
 
-# 3. Clone the repository and install Ansible
-git clone https://github.com/LunarVigilante/bb_ansible.git blackbeard
-cd blackbeard
-chmod +x install.sh
-./install.sh
-```
+---
 
-### 2. Configure Node Identity
-```bash
-cp accounts.yml.default accounts.yml
-cp settings.yml.default settings.yml
+## Step-by-Step Cluster Deployment
 
-nano accounts.yml    # Fill in your secure credentials (Git-ignored)
-nano settings.yml    # Configure this node's topology (e.g., node_type: fdr)
-```
+When building a fresh Blackbeard cluster from scratch, you must provision the nodes in a specific mathematical order so the identity matrix bootstraps cleanly. 
 
-### 3. Deploy
-```bash
-bb install core      # Base system (users, SSH, packages, TCP, ring buffers)
-bb install node      # OR full provisioning (everything)
-```
+### Step 1: Provision the Service Node
+You must establish the identity core (Authentik) first, as all other nodes will eventually route their subdomains to it.
+
+1. Install a fresh OS (Debian/Arch) on your Service hardware.
+2. Run the bootstrap installer as root:
+   ```bash
+   su -
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   ```
+3. Run the interactive setup wizard:
+   ```bash
+   cd /srv/git/blackbeard
+   bb setup
+   ```
+   *   *(Choose `service` for Node Type, and skip Media Provider config since it doesn't stream).*
+4. Execute the deployment:
+   ```bash
+   bb install node
+   ```
+5. Log into your new Authentik dashboard (e.g. `https://sso.yourdomain.com`) using the auto-generated password outputted by the wizard, and establish your core user identity.
+
+### Step 2: Provision the Feeder Node
+Now that SSO is online, spin up the download engine.
+
+1. Boot the Feeder hardware.
+2. Bootstrap the box: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
+3. Enter setup: `cd /srv/git/blackbeard && bb setup`
+   *   *(Choose `feeder` for Node Type).*
+4. Deploy the stack: `bb install node`
+5. The system will automatically acquire its Ceph keyring, mount the unified `/data` arrays, deploy the *Arr stack, and hook its web dashboards into the Traefik router on the Service node.
+
+### Step 3: Provision Media Nodes (Appboxes/Shares)
+Finally, generate edge nodes for users to consume the media.
+
+1. Boot the Media hardware (preferably with a GPU/QuickSync).
+2. Bootstrap: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
+3. Enter setup: `cd /srv/git/blackbeard && bb setup`
+   *   *(Choose `appbox` or `share` for Node Type).*
+   *   *(Choose `emby`, `plex`, or `jellyfin` for the media platform).*
+4. Deploy the stack: `bb install node`
+5. The media node will mount the Ceph `/media` array strictly as **Read-Only** to protect your library, dynamically request an ingress certificate from Cloudflare, and spin up the designated streaming container.
 
 ## BB Commands
 
