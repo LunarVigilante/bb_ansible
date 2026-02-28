@@ -570,6 +570,56 @@ do_audit() {
     fi
 }
 
+do_deps() {
+    log_info "Generating live dependency inventory..."
+    echo ""
+
+    # Docker container images
+    echo -e "${CYAN}━━━ Container Images ━━━${NC}"
+    if command -v docker &>/dev/null; then
+        printf "  ${BOLD}%-40s %-25s %s${NC}\n" "IMAGE" "TAG" "STATUS"
+        printf "  %-40s %-25s %s\n" "────────────────────────────────────" "──────────────────────" "──────────"
+        docker ps -a --format '{{.Image}} {{.Status}}' | sort -u | while read -r img status; do
+            local name tag
+            if [[ "${img}" == *":"* ]]; then
+                name="${img%%:*}"
+                tag="${img##*:}"
+            else
+                name="${img}"
+                tag="(untagged)"
+            fi
+            # Highlight 'latest' tags in yellow
+            if [[ "${tag}" == "latest" ]]; then
+                printf "  %-40s ${YELLOW}%-25s${NC} %s\n" "${name}" "${tag}" "${status}"
+            else
+                printf "  %-40s ${GREEN}%-25s${NC} %s\n" "${name}" "${tag}" "${status}"
+            fi
+        done
+    else
+        log_warn "Docker is not installed."
+    fi
+    echo ""
+
+    # Ansible Galaxy collections
+    echo -e "${CYAN}━━━ Ansible Collections ━━━${NC}"
+    if command -v ansible-galaxy &>/dev/null; then
+        ansible-galaxy collection list 2>/dev/null | grep -E '^\S' | sed 's/^/  /'
+    else
+        log_warn "ansible-galaxy not found."
+    fi
+    echo ""
+
+    # Summary
+    local total_containers latest_count pinned_count
+    total_containers=$(docker ps -a --format '{{.Image}}' 2>/dev/null | sort -u | wc -l)
+    latest_count=$(docker ps -a --format '{{.Image}}' 2>/dev/null | sort -u | grep -c ':latest' || true)
+    pinned_count=$((total_containers - latest_count))
+    echo -e "${MAGENTA}━━━ Summary ━━━${NC}"
+    echo -e "  Total images:  ${total_containers}"
+    echo -e "  Pinned:        ${GREEN}${pinned_count}${NC}"
+    echo -e "  Using latest:  ${YELLOW}${latest_count}${NC}"
+}
+
 do_logs() {
     if [[ ! -d "${LOG_DIR}" ]]; then
         log_warn "No logs yet. Run 'bb install' first."
@@ -861,6 +911,10 @@ case "${COMMAND}" in
     audit)
         show_banner
         do_audit
+        ;;
+    deps)
+        show_banner
+        do_deps
         ;;
     commands)
         show_banner
