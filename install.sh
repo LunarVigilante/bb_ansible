@@ -24,7 +24,13 @@ NC='\033[0m' # No Color
 
 REPO_URL="${BB_REPO_URL:-https://github.com/LunarVigilante/bb_ansible.git}"
 REPO_BRANCH="${BB_REPO_BRANCH:-main}"
-INSTALL_DIR="/srv/git/blackbeard"
+
+# Intelligently detect if piped via curl or run explicitly to determine install directory
+if [[ "$0" == *"bash"* || "$0" == *"sh" ]]; then
+    INSTALL_DIR="${BB_INSTALL_DIR:-$HOME/blackbeard}"
+else
+    INSTALL_DIR="${BB_INSTALL_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+fi
 
 log_info()  { echo -e "${CYAN}[bb]${NC} $1"; }
 log_ok()    { echo -e "${GREEN}[bb]${NC} $1"; }
