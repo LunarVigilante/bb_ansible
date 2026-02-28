@@ -62,8 +62,7 @@ You must establish the identity core (Authentik) first, as all other nodes will 
 2. Ensure your properly configured `.env` file is present in your current directory. 
 3. Become root and run the bootstrap installer:
    ```bash
-   su -
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
    ```
 4. Execute the deployment:
    ```bash
@@ -84,8 +83,7 @@ Now that SSO is online, spin up the download engine.
    ```
 4. Become root and run the bootstrap installer:
    ```bash
-   su -
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
    ```
 5. Deploy the stack: 
    ```bash
@@ -107,8 +105,7 @@ Finally, generate edge nodes for users to consume the media.
    ```
 4. Become root and run the bootstrap installer:
    ```bash
-   su -
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
    ```
 5. Deploy the stack:
    ```bash
