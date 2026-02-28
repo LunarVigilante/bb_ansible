@@ -3,13 +3,15 @@
 # Blackbeard Media — CLI Wrapper (bb)
 # =============================================================================
 # Usage:
+#   bb setup                     Run the interactive configuration wizard
 #   bb install core              Install bare minimum
 #   bb install node              Full provisioning (all roles)
 #   bb install docker            Install/update a single component
 #   bb install core,docker,ceph  Install multiple components
 #   bb list                      List available install tags
 #   bb status                    Show current node config
-#   bb edit accounts|settings    Edit config files
+#   bb edit <file>               Quick-edit settings or accounts
+#   bb reconfigure               Apply variable changes without full install
 #   bb logs                      Show last ansible run log
 #   bb update                    Pull latest from git and update deps
 #   bb health [smart|cpu|mem|io] Run hardware health checks
@@ -97,12 +99,14 @@ show_usage() {
     echo -e "Usage: ${GREEN}bb${NC} <command> [arguments]"
     echo ""
     echo -e "Commands:"
+    echo -e "  ${GREEN}setup${NC}              Run the interactive configuration wizard"
     echo -e "  ${GREEN}install${NC} <tag>      Install a component or group of components"
     echo -e "  ${GREEN}list${NC}               List all available install tags"
     echo -e "  ${GREEN}commands${NC}            List all bb commands with descriptions"
     echo -e "  ${GREEN}help${NC} <command>      Show detailed help for a command"
     echo -e "  ${GREEN}status${NC}             Show current node configuration"
     echo -e "  ${GREEN}edit${NC} <file>        Edit accounts.yml or settings.yml"
+    echo -e "  ${GREEN}reconfigure${NC}        Apply variable changes without full install"
     echo -e "  ${GREEN}logs${NC}               Show last ansible run log"
     echo -e "  ${GREEN}update${NC}             Pull latest changes from git"
     echo -e "  ${GREEN}health${NC} [check]     Run hardware health checks"
@@ -114,12 +118,14 @@ show_usage() {
 show_commands() {
     echo -e "${MAGENTA}═══ All Commands ═══${NC}"
     echo ""
+    printf "  ${GREEN}%-14s${NC} %s\n" "setup"     "Run the interactive configuration wizard"
     printf "  ${GREEN}%-14s${NC} %s\n" "install"   "Run Ansible roles to provision components on this node"
     printf "  ${GREEN}%-14s${NC} %s\n" "list"      "Show all available install tags (core, node, docker, etc.)"
     printf "  ${GREEN}%-14s${NC} %s\n" "commands"  "Show this list of all bb commands"
     printf "  ${GREEN}%-14s${NC} %s\n" "help"      "Show detailed help and examples for a specific command"
     printf "  ${GREEN}%-14s${NC} %s\n" "status"    "Display current node settings and config validation"
     printf "  ${GREEN}%-14s${NC} %s\n" "edit"      "Open accounts.yml or settings.yml in your editor"
+    printf "  ${GREEN}%-14s${NC} %s\n" "reconfigure" "Apply variable changes without full install"
     printf "  ${GREEN}%-14s${NC} %s\n" "logs"      "View the most recent Ansible run log"
     printf "  ${GREEN}%-14s${NC} %s\n" "update"    "Pull latest code from git and update Ansible collections"
     printf "  ${GREEN}%-14s${NC} %s\n" "health"    "Run hardware health checks (SMART, CPU, memory, I/O)"
@@ -137,6 +143,15 @@ show_command_help() {
     fi
 
     case "${cmd}" in
+        setup)
+            echo -e "${MAGENTA}═══ bb setup ═══${NC}"
+            echo ""
+            echo -e "  Run the interactive configuration wizard to set up your node."
+            echo -e "  This will guide you through initial settings and account details."
+            echo ""
+            echo -e "  ${BOLD}Usage:${NC}"
+            echo -e "    ${CYAN}bb setup${NC}"
+            ;;
         install)
             echo -e "${MAGENTA}═══ bb install ═══${NC}"
             echo ""
@@ -197,6 +212,15 @@ show_command_help() {
             echo -e "  ${BOLD}Usage:${NC}"
             echo -e "    ${CYAN}bb edit accounts${NC}   # Edit credentials and API keys"
             echo -e "    ${CYAN}bb edit settings${NC}   # Edit node identity and service config"
+            ;;
+        reconfigure)
+            echo -e "${MAGENTA}═══ bb reconfigure ═══${NC}"
+            echo ""
+            echo -e "  Apply changes from settings.yml and accounts.yml without running a full install."
+            echo -e "  This is useful for updating variables that don't require re-provisioning services."
+            echo -e "  It runs a limited set of Ansible tasks to refresh configuration."
+            echo ""
+            echo -e "  ${BOLD}Usage:${NC}  bb reconfigure"
             ;;
         logs|log)
             echo -e "${MAGENTA}═══ bb logs ═══${NC}"
@@ -410,7 +434,7 @@ do_install() {
     fi
 }
 
-do_edit() {
+cmd_edit() {
     local target="${1:-}"
     local editor="${EDITOR:-nano}"
 
@@ -431,6 +455,37 @@ do_edit() {
             ;;
     esac
 }
+
+do_reconfigure() {
+    log_info "Applying configuration changes..."
+    validate_configs
+
+    mkdir -p "${LOG_DIR}"
+    local log_file="${LOG_DIR}/ansible-reconfigure-$(date +%Y%m%d-%H%M%S).log"
+
+    cd "${BB_DIR}"
+
+    # Run a limited set of tasks to apply variable changes
+    # This should be a lightweight playbook or specific tags that don't re-provision services
+    /usr/bin/ansible-playbook setup.yml \
+        --tags "base,users,ssh,tcp,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed" \
+        --skip-tags "packages,lvm,ethtool" \
+        -e "ansible_skip_install_checks=true" \
+        2>&1 | tee "${log_file}"
+
+    local exit_code=${PIPESTATUS[0]}
+
+    echo ""
+    if [[ ${exit_code} -eq 0 ]]; then
+        log_ok "Configuration re-applied successfully."
+        log_info "Log saved: ${log_file}"
+    else
+        log_error "Configuration re-application failed with exit code ${exit_code}"
+        log_info "Check log: ${log_file}"
+        exit ${exit_code}
+    fi
+}
+
 
 do_logs() {
     if [[ ! -d "${LOG_DIR}" ]]; then
@@ -696,7 +751,14 @@ case "${COMMAND}" in
         show_status
         ;;
     edit)
-        do_edit "$@"
+        cmd_edit "$1"
+        ;;
+    setup)
+        bash "${BB_DIR}/scripts/setup_wizard.sh"
+        ;;
+    reconfigure)
+        show_banner
+        do_reconfigure
         ;;
     logs|log)
         do_logs
