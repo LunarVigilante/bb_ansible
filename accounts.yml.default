@@ -66,6 +66,7 @@ discord_webhook_general: "" # General notifications
 discord_webhook_media: ""   # Media additions/updates
 
 # --- Misc API Keys ---
+# API key for the Nimbus Route CDN
 musics_api_key: ""
 
 # --- Open WebUI (AI Services) ---
