@@ -23,9 +23,7 @@ node_type: "appbox"
 # Is this a 10Gbps node? (true/false)
 is_10g_node: false
 
-# Secondary drive device path (e.g. /dev/nvme1n1)
-# Set to "none" if this server has a single drive.
-secondary_drive: "none"
+# --- Settings ---
 
 # --- Emby Settings ---
 # Emby tier (only applies when media_service: emby)

@@ -97,8 +97,6 @@ else
     set_val "settings.yml" "is_10g_node" "false" "true"
 fi
 
-set_val "settings.yml" "secondary_drive" "${BB_SECONDARY_DRIVE:-none}"
-
 # =============================================================================
 # Apply accounts.yml & global identites
 # =============================================================================

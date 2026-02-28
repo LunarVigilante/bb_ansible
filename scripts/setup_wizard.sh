@@ -178,11 +178,6 @@ elif [[ "${is10g}" == "n" || "${is10g}" == "N" || "${is10g}" == "false" ]]; then
     set_val "settings.yml" "is_10g_node" "false" "true"
 fi
 
-curr_hdd=$(get_val "settings.yml" "secondary_drive")
-ask "Secondary drive path (e.g. /dev/nvme1n1, or 'none') [${curr_hdd}]:"
-read -r hdd
-[[ -n "${hdd}" ]] && set_val "settings.yml" "secondary_drive" "${hdd}"
-
 
 # --- Part 2: Accounts & Secrets ---
 echo -e "\n${CYAN}━━━ Phase 2: Core Credentials ━━━${NC}"
