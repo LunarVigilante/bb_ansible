@@ -26,7 +26,8 @@ MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-BB_DIR="/srv/git/blackbeard"
+# Dynamically resolve the true installation directory by tracing the symlink
+BB_DIR="$(cd "$(dirname "$(readlink -f "$0" || readlink "$0" || echo "$0")")" && pwd)"
 LOG_DIR="/var/log/blackbeard"
 
 log_info()  { echo -e "${CYAN}[bb]${NC} $1"; }
