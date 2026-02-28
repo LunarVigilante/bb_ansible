@@ -114,14 +114,21 @@ set_val "accounts.yml" "cf_email" "${BB_CF_EMAIL:-}"
 set_val "accounts.yml" "cf_api_token" "${BB_CF_API_TOKEN:-}"
 
 # SSH Identities
-if [[ -n "${BB_ADMIN_SSH_KEY:-}" ]]; then
-    inject_ssh_key "ssh_authorized_keys" "${BB_ADMIN_SSH_KEY}" "Env_Admin_Key"
-    log_info "Injected Headless Admin SSH Key"
-fi
-if [[ -n "${BB_ROOT_SSH_KEY:-}" ]]; then
-    inject_ssh_key "ssh_root_keys" "${BB_ROOT_SSH_KEY}" "Env_Root_Key"
-    log_info "Injected Headless Root SSH Key"
-fi
+for var in $(compgen -v | grep '^BB_ADMIN_SSH_KEY'); do
+    val="${!var}"
+    if [[ -n "${val}" ]]; then
+        inject_ssh_key "ssh_authorized_keys" "${val}" "Env_${var}"
+        log_info "Injected Headless Admin SSH Key: ${var}"
+    fi
+done
+
+for var in $(compgen -v | grep '^BB_ROOT_SSH_KEY'); do
+    val="${!var}"
+    if [[ -n "${val}" ]]; then
+        inject_ssh_key "ssh_root_keys" "${val}" "Env_${var}"
+        log_info "Injected Headless Root SSH Key: ${var}"
+    fi
+done
 
 # Media Service
 set_val "accounts.yml" "plex_token" "${BB_PLEX_TOKEN:-}"
