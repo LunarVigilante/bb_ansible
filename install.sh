@@ -100,9 +100,12 @@ setup_repo() {
 
 # --- Create config files from templates ---
 create_configs() {
+    local first_install="false"
+
     if [[ ! -f "${INSTALL_DIR}/accounts.yml" ]]; then
         cp "${INSTALL_DIR}/accounts.yml.default" "${INSTALL_DIR}/accounts.yml"
         log_warn "Created accounts.yml — EDIT THIS FILE with your credentials!"
+        first_install="true"
     else
         log_ok "accounts.yml already exists, skipping."
     fi
@@ -115,15 +118,17 @@ create_configs() {
     fi
 
     # Headless Pre-provisioning via .env detection
-    if [[ -f "${ORIGIN_DIR}/.env" ]]; then
-        # Safety Check: Do not blindly re-apply .env if the node is already fully configured
-        if grep -q "CHANGE_ME" "${INSTALL_DIR}/accounts.yml" 2>/dev/null; then
+    if [[ "${first_install}" == "true" ]]; then
+        if [[ -f "${ORIGIN_DIR}/.env" && "${ORIGIN_DIR}" != "${INSTALL_DIR}" ]]; then
             log_info "Detected headless .env provisioning file..."
             cp "${ORIGIN_DIR}/.env" "${INSTALL_DIR}/.env"
             bash "${INSTALL_DIR}/scripts/apply_env.sh"
-        else
-            log_warn "accounts.yml is already configured. Ignoring local .env to prevent overwrites."
+        elif [[ -f "${INSTALL_DIR}/.env" ]]; then
+            log_info "Detected headless .env provisioning file..."
+            bash "${INSTALL_DIR}/scripts/apply_env.sh"
         fi
+    elif [[ -f "${ORIGIN_DIR}/.env" || -f "${INSTALL_DIR}/.env" ]]; then
+        log_info "Node is already configured. Ignoring .env files to preserve accounts.yml."
     fi
 }
 
