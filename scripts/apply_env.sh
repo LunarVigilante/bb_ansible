@@ -109,7 +109,12 @@ set_val "settings.yml" "lvm_ignore_drives" "${BB_LVM_IGNORE_DRIVES:-}"
 # =============================================================================
 
 # Globals
-set_val "accounts.yml" "admin_password" "${BB_ADMIN_PASSWORD:-}"
+if [[ -z "${BB_ADMIN_PASSWORD:-}" || "${BB_ADMIN_PASSWORD:-}" == *"CHANGE_ME"* ]]; then
+    BB_ADMIN_PASSWORD="$(openssl rand -hex 16)"
+    log_info "Auto-generated secure root OS password for 'admin' user"
+fi
+set_val "accounts.yml" "admin_password" "${BB_ADMIN_PASSWORD}"
+
 set_val "accounts.yml" "cf_email" "${BB_CF_EMAIL:-}"
 set_val "accounts.yml" "cf_api_token" "${BB_CF_API_TOKEN:-}"
 

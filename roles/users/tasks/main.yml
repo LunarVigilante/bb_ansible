@@ -10,7 +10,7 @@
     create_home: true
     groups: "{{ 'wheel' if ansible_os_family == 'Archlinux' else 'sudo' }}"
     append: true
-    password: "{{ vault_admin_password | password_hash('sha512', 'bb_static_salt') }}"
+    password: "{{ vault_admin_password | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) }}"
     state: present
 
 - name: Create .ssh directory for admin
