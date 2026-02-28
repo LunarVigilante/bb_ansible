@@ -320,9 +320,9 @@ beszel_hub_key: ""              # from Beszel Hub → Add System
 ```yaml
 node_name: "e-ab-sm-01"
 media_service: "emby"       # emby / plex / jellyfin
-node_type: "appbox"         # share / appbox / baremetal
+node_type: "appbox"         # share / appbox / baremetal / service / feeder
 is_10g_node: false
-secondary_drive: "none"     # or /dev/nvme1n1
+lvm_ignore_drives: ""       # comma-separated drives to protect from auto-wipe
 emby_tier: "skip"           # appbox / basic / skip
 ```
 

@@ -27,7 +27,7 @@ REPO_BRANCH="${BB_REPO_BRANCH:-main}"
 
 # Intelligently detect if piped via curl or run explicitly to determine install directory
 if [[ "$0" == *"bash"* || "$0" == *"sh" ]]; then
-    INSTALL_DIR="${BB_INSTALL_DIR:-$HOME/blackbeard}"
+    INSTALL_DIR="${BB_INSTALL_DIR:-/srv/git/blackbeard}"
     ORIGIN_DIR="${PWD}"
 else
     INSTALL_DIR="${BB_INSTALL_DIR:-$(cd "$(dirname "$0")" && pwd)}"
@@ -120,17 +120,31 @@ create_configs() {
     fi
 
     # Headless Pre-provisioning via .env detection
-    if [[ "${first_install}" == "true" ]]; then
-        if [[ -f "${ORIGIN_DIR}/.env" && "${ORIGIN_DIR}" != "${INSTALL_DIR}" ]]; then
-            log_info "Detected headless .env provisioning file..."
-            cp "${ORIGIN_DIR}/.env" "${INSTALL_DIR}/.env"
+    # Search order: origin dir (where curl was run), $HOME, install dir
+    local env_source=""
+    if [[ -f "${ORIGIN_DIR}/.env" && "${ORIGIN_DIR}" != "${INSTALL_DIR}" ]]; then
+        env_source="${ORIGIN_DIR}/.env"
+        log_info "Found .env at ${env_source} (origin dir)"
+    elif [[ -f "${HOME}/.env" && "${HOME}" != "${INSTALL_DIR}" ]]; then
+        env_source="${HOME}/.env"
+        log_info "Found .env at ${env_source} (home dir)"
+    elif [[ -f "${INSTALL_DIR}/.env" ]]; then
+        env_source="${INSTALL_DIR}/.env"
+        log_info "Found .env at ${env_source} (install dir)"
+    fi
+
+    if [[ -n "${env_source}" ]]; then
+        if [[ "${first_install}" == "true" ]]; then
+            log_info "Executing headless .env injection into config files..."
+            if [[ "${env_source}" != "${INSTALL_DIR}/.env" ]]; then
+                cp "${env_source}" "${INSTALL_DIR}/.env"
+            fi
             bash "${INSTALL_DIR}/scripts/apply_env.sh"
-        elif [[ -f "${INSTALL_DIR}/.env" ]]; then
-            log_info "Detected headless .env provisioning file..."
-            bash "${INSTALL_DIR}/scripts/apply_env.sh"
+        else
+            log_info "Node already configured. Ignoring .env to preserve accounts.yml."
         fi
-    elif [[ -f "${ORIGIN_DIR}/.env" || -f "${INSTALL_DIR}/.env" ]]; then
-        log_info "Node is already configured. Ignoring .env files to preserve accounts.yml."
+    else
+        log_warn "No .env file found. You will need to manually edit accounts.yml and settings.yml."
     fi
 }
 
