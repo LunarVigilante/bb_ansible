@@ -27,10 +27,20 @@ fi
 
 log_info "Found .env file. Executing headless pre-provisioning injection..."
 
-# Source the .env cleanly
-set -a
-source "${ENV_FILE}"
-set +a
+# Parse the .env safely (line-by-line, not bash source)
+while IFS= read -r line || [[ -n "${line}" ]]; do
+    # Skip blank lines and comments
+    [[ -z "${line}" || "${line}" =~ ^[[:space:]]*# ]] && continue
+    # Strip inline comments and trailing whitespace
+    line=$(echo "${line}" | sed 's/[[:space:]]*#.*$//; s/[[:space:]]*$//')
+    [[ -z "${line}" ]] && continue
+    # Split on first '=' and export
+    key="${line%%=*}"
+    val="${line#*=}"
+    # Strip surrounding quotes from value
+    val=$(echo "${val}" | sed 's/^"//;s/"$//;s/^'"'"'//;s/'"'"'$//')
+    export "${key}=${val}"
+done < "${ENV_FILE}"
 
 # Sets value with quotes if string, without if boolean
 set_val() {
