@@ -114,27 +114,150 @@ Finally, generate edge nodes for users to consume the media.
    ```
 6. The media node will mount the Ceph `/media` array strictly as **Read-Only** to protect your library, dynamically request an ingress certificate from Cloudflare, and spin up the designated streaming container.
 
-## BB Commands
+## Security
 
-| Command | What it does |
-|---------|-------------|
-| `bb install core` | Base system: hostname, users, SSH, packages, TCP, LVM, ring buffers, docker, traefik |
-| `bb install node` | Full provisioning: core + all services |
-| `bb install docker` | Single component |
-| `bb install core,docker,ceph` | Multiple components |
-| `bb list` | Show all available install tags |
-| `bb commands` | List all bb commands with descriptions |
-| `bb help <command>` | Detailed help for any command (usage, examples) |
-| `bb status` | Show current node config + validation |
-| `bb edit accounts` | Edit credentials file |
-| `bb edit settings` | Edit node settings file |
-| `bb logs` | View last ansible run log |
-| `bb update` | Pull latest from git + show commit diff |
-| `bb health` | Run all hardware health checks |
-| `bb health smart` | SMART disk status, temp, power-on hours, bad sectors |
-| `bb health cpu` | 30-second CPU stress test on all cores |
-| `bb health mem` | 256MB memory stress test |
-| `bb health io` | Disk I/O benchmark + Ceph read speed |
+### Data Flow — Request Journey Through the Security Stack
+
+```mermaid
+flowchart TD
+    Client["🌐 Client Request"]
+    DNS["Cloudflare DNS\n(Proxy + WAF)"]
+    FW["iptables + ipset\n(IP Blacklist)"]
+    F2B["fail2ban\n(SSH Brute-Force)"]
+    TE["Traefik Entrypoint\n:80 → :443 redirect"]
+    CS["CrowdSec Bouncer\n(L7 Behavioral IDS)"]
+    RL["Rate Limiter\n(100 req/s, 200 burst)"]
+    SH["Security Headers\n(CSP, HSTS, CORS, XSS)"]
+    AUTH["Authentik ForwardAuth\n(SSO / OAuth2 / JWT)"]
+    APP["Application Container\n(Internal Docker Network)"]
+    DB["Database\n(Internal Network, icc: false)"]
+    SOCK["Docker Socket Proxy\n(Read-Only, Filtered API)"]
+
+    Client --> DNS --> FW
+    FW -->|SSH| F2B -->|Allowed| APP
+    FW -->|HTTP/S| TE --> CS
+    CS -->|Allowed| RL --> SH
+    SH --> AUTH -->|Authenticated| APP
+    APP -.->|Data| DB
+    APP -.->|Docker API| SOCK
+
+    style Client fill:#1a1a2e,stroke:#e94560,color:#fff
+    style DNS fill:#16213e,stroke:#0f3460,color:#fff
+    style FW fill:#1a1a2e,stroke:#e94560,color:#fff
+    style F2B fill:#1a1a2e,stroke:#e94560,color:#fff
+    style TE fill:#0f3460,stroke:#533483,color:#fff
+    style CS fill:#533483,stroke:#e94560,color:#fff
+    style RL fill:#533483,stroke:#e94560,color:#fff
+    style SH fill:#533483,stroke:#e94560,color:#fff
+    style AUTH fill:#e94560,stroke:#fff,color:#fff
+    style APP fill:#16213e,stroke:#0f3460,color:#fff
+    style DB fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style SOCK fill:#1a1a2e,stroke:#0f3460,color:#fff
+```
+
+### Network Security
+
+| Layer | Control | Details |
+|-------|---------|---------|
+| **Edge** | Cloudflare DNS Proxy | WAF + DDoS mitigation at edge |
+| **L3/L4** | `ipset_blacklist` | Weekly-updated IP blacklist via systemd timer |
+| **L4** | `fail2ban` | SSH: aggressive mode, 3 retries, 1h ban + recidive (3 bans = 1 week) |
+| **L7** | CrowdSec | Behavioral IDS with community blocklists + Traefik bouncer |
+| **L7** | Traefik Rate Limiter | 100 req/s average, 200 burst globally on all entrypoints |
+| **Docker** | `icc: false` | Inter-container communication disabled by default |
+| **Docker** | Internal networks | All databases isolated on `internal: true` Docker networks |
+| **Docker** | Socket proxy | Read-only Docker API via `tecnativa/docker-socket-proxy` |
+
+### Authentication & Access Control
+
+| Control | Implementation |
+|---------|---------------|
+| **SSO** | Authentik ForwardAuth via Traefik (OAuth2/OIDC) |
+| **Session** | 8-hour max duration, explicit timeout enforcement |
+| **MFA** | Authentik supports TOTP + WebAuthn (manual enforcement in admin UI) |
+| **OS passwords** | SHA-512 with dynamic host-seeded salts |
+| **Lockout** | fail2ban SSH + Authentik built-in rate limiting |
+| **SSH alerting** | PAM-triggered Discord webhook on every successful login |
+
+### Credential Security
+
+| Control | Implementation |
+|---------|---------------|
+| **Auto-generation** | All blank/`CHANGE_ME` passwords auto-generated via `openssl rand -hex 16` |
+| **Min length** | User-supplied passwords < 8 chars are overridden with secure random |
+| **File permissions** | `accounts.yml` and `settings.yml` locked to `0600` on creation |
+| **Ansible logging** | `no_log: true` on all sensitive template deployments |
+| **Telemetry** | Authentik Sentry error reporting disabled; Traefik anonymous usage disabled |
+| **Git safety** | `.gitignore` covers `.env`, vault files, SSH keys, ACME certs, TLS keys |
+| **CI scanning** | Gitleaks scans every push/PR for leaked API keys and secrets |
+
+### Container Hardening
+
+| Control | Implementation |
+|---------|---------------|
+| **Privilege escalation** | `no-new-privileges: true` in Docker daemon |
+| **Userland proxy** | Disabled (`userland-proxy: false`) — uses iptables hairpin NAT |
+| **Log rotation** | `json-file` driver, `10m` max size, `3` file retention |
+| **QoS isolation** | All containers in `kronos.slice` cgroup with `CPUWeight=50`, `IOWeight=50` |
+| **Port binding** | Authentik ports bound to `127.0.0.1` (unreachable externally) |
+
+### API & Client-Side Protection
+
+| Control | Implementation |
+|---------|---------------|
+| **TLS** | Let's Encrypt via Cloudflare DNS-01 challenge, TLS 1.2 minimum |
+| **HSTS** | 1 year + subdomains + preload |
+| **CSP** | `default-src 'self'`, `script-src 'self'`, `object-src 'none'`, `upgrade-insecure-requests` |
+| **CORS** | `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` |
+| **Permissions** | Camera, mic, geolocation, payment, USB, sensors all disabled |
+| **Headers** | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `X-XSS-Protection: 1` |
+| **Server info** | `X-Powered-By` and `Server` headers stripped |
+
+### Input Validation
+
+| Control | Implementation |
+|---------|---------------|
+| **Shell hardening** | `set -euo pipefail` on all scripts |
+| **Sed injection** | Pipe characters escaped in `set_val()` before sed substitution |
+| **Node type** | Enum validation: `share`, `appbox`, `baremetal`, `service`, `feeder` |
+| **Domain format** | FQDN regex validation for `base_domain` before deployment |
+
+### Monitoring & Alerting
+
+| Alert | Channel | Trigger |
+|-------|---------|---------|
+| SSH login | Discord | Every successful SSH authentication via PAM hook |
+| Brute-force ban | fail2ban log | 3 failed SSH attempts |
+| Container update | Dockwatch UI | New image version available |
+| VPN tunnel restart | Discord | Gluetun container die/restart event |
+| L7 threat | CrowdSec | Behavioral anomaly detection |
+
+### CI/CD Security Pipeline
+
+| Workflow | Purpose |
+|----------|---------|
+| `gitleaks.yml` | Scans every push/PR for leaked API keys, passwords, and secrets |
+| `ansible-lint.yml` | SAST: runs `ansible-lint --strict` on all YAML/Jinja2 changes |
+
+### Security CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `bb validate` | Pre-flight: Ansible syntax check + `--check --diff` dry-run |
+| `bb audit` | Scans for CHANGE_ME placeholders, weak file permissions, Docker socket exposure, and debug log levels |
+| `bb deps` | Live SBOM: lists all container images with tag status + Ansible Galaxy collections |
+
+## Post-Install
+
+After `bb install node` completes:
+1. SSH as admin: `ssh admin@NODE_IP`
+2. Verify config: `bb status`
+3. Run security audit: `bb audit`
+4. Run health check: `bb health`
+5. Containers are deployed automatically via Docker Compose (Traefik, Gluetun, Autoscan)
+6. (Plex) Copy `.ovpn` file: `cp your-vpn.ovpn /opt/gluetun/config.conf && cd /opt/gluetun && docker compose up -d`
+7. Accept CrowdSec enrollment at [app.crowdsec.net](https://app.crowdsec.net)
+
 
 ## Available Tags
 
@@ -159,7 +282,7 @@ Finally, generate edge nodes for users to consume the media.
 | `ceph` | Ceph config + API user + mounts (tuned for streaming readahead) | — |
 | `docker` | Docker 28.5.2 (pinned), daemon.json, all networks, Portainer agent, autoheal | — |
 | `crowdsec` | CrowdSec IDS + Traefik bouncer | — |
-| `diun` | Docker image update notifier (Discord/webhook) | — |
+| `dockwatch` | Docker image update notifier / web UI | — |
 | `beszel` | Lightweight server monitoring agent (8MB RAM) | needs `beszel_hub_key` |
 | `ipset` | IP blacklist timer | — |
 | `traefik` | Traefik reverse proxy via Docker Compose + Cloudflare ACME | — |
@@ -182,7 +305,7 @@ cf_api_token: "cloudflare_api_token"
 musics_api_key: "music_key"
 autoscan_password: ""           # leave blank to auto-generate
 crowdsec_enroll_key: ""         # free at app.crowdsec.net
-diun_discord_webhook: ""        # Discord webhook for image updates
+dockwatch_discord_webhook: ""     # Discord webhook for image updates
 beszel_hub_key: ""              # from Beszel Hub → Add System
 ```
 
@@ -219,7 +342,7 @@ emby_tier: "skip"           # appbox / basic / skip
     ├── ceph_client/        # Ceph REST API + mounts (8MB readahead, OSD tuning)
     ├── docker/             # Docker 28.5.2 (pinned), daemon.json, all networks, Portainer, autoheal
     ├── crowdsec/           # CrowdSec IDS + Traefik bouncer
-    ├── diun/               # Docker image update notifier
+    ├── dockwatch/          # Web-based autonomous container updater
     ├── beszel/             # Lightweight server monitoring agent
     ├── ipset_blacklist/    # IP blacklist timer
     ├── traefik/            # Traefik reverse proxy (Docker Compose + Cloudflare ACME)
