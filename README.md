@@ -94,7 +94,7 @@ Finally, generate edge nodes for users to consume the media.
 
 | Command | What it does |
 |---------|-------------|
-| `bb install core` | Base system: hostname, users, SSH, packages, TCP, LVM, ring buffers |
+| `bb install core` | Base system: hostname, users, SSH, packages, TCP, LVM, ring buffers, docker, traefik |
 | `bb install node` | Full provisioning: core + all services |
 | `bb install docker` | Single component |
 | `bb install core,docker,ceph` | Multiple components |

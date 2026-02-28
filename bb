@@ -44,8 +44,8 @@ log_error() { echo -e "${RED}[bb]${NC} $1"; }
 
 declare -A TAG_DESCRIPTIONS=(
     # Grouped installs
-    ["core"]="Base system: hostname, users, SSH, packages, TCP, LVM (if 2nd drive), ethtool (if 10G)"
-    ["node"]="Full provisioning: core + all services (Ceph, Docker, CrowdSec, etc.)"
+    ["core"]="Base system: hostname, users, SSH, packages, TCP, LVM, ethtool, docker, traefik"
+    ["node"]="Full provisioning: core + all services (Ceph, CrowdSec, Apps, etc.)"
 
     # Individual components
     ["base"]="Hostname, dotfiles (.bashrc, .bash_aliases), NTP, timezone"
@@ -78,7 +78,7 @@ declare -A TAG_DESCRIPTIONS=(
 )
 
 # What "core" expands to (includes lvm/ethtool — they self-skip via when:):
-CORE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool"
+CORE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,docker,traefik"
 
 # What "node" expands to (everything):
 NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed"
