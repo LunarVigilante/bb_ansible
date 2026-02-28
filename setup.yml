@@ -104,19 +104,19 @@
 
     - name: Display configuration summary
       ansible.builtin.debug:
-        msg: |
-          ┌─────────────────────────────────────┐
-          │  Node Configuration                 │
-          ├─────────────────────────────────────┤
-          │  Name:           {{ node_name }}
-          │  Media Service:  {{ media_service }}
-          │  Node Type:      {{ node_type }}
-          │  10Gbps:         {{ is_10g_node }}
-          │  LVM Ignore:     {{ lvm_ignore_drives | default('none') }}
-          │  Emby Tier:      {{ emby_tier }}
-          │  OS Family:      {{ ansible_facts['os_family'] }}
-          │  Timezone:       {{ timezone }}
-          └─────────────────────────────────────┘
+        msg:
+          - "┌─────────────────────────────────────┐"
+          - "│  Node Configuration                 │"
+          - "├─────────────────────────────────────┤"
+          - "│  Name:           {{ node_name }}"
+          - "│  Media Service:  {{ media_service }}"
+          - "│  Node Type:      {{ node_type }}"
+          - "│  10Gbps:         {{ is_10g_node }}"
+          - "│  LVM Ignore:     {{ lvm_ignore_drives | default('none') }}"
+          - "│  Emby Tier:      {{ emby_tier }}"
+          - "│  OS Family:      {{ ansible_facts['os_family'] }}"
+          - "│  Timezone:       {{ timezone }}"
+          - "└─────────────────────────────────────┘"
       tags: ['always']
 
   roles:
