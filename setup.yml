@@ -160,6 +160,7 @@
 
     - role: authentik
       tags: ['authentik']
+      when: node_type == 'service'
 
     - role: autoscan
       tags: ['autoscan']

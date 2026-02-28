@@ -279,7 +279,6 @@ autopulse_webhooks: {}
 # Authentik — Single Sign-On (SSO) Portal
 # ---------------------------------------------------------------------------
 authentik_version: "2024.12.1"
-# Which node's domain will host the auth portal:
-authentik_domain: "sso.yourdomain.com"
+# Which node's domain will host the auth portal (Defined in accounts.yml via .env)
 authentik_port_http: 9005
 authentik_port_https: 9445

@@ -47,6 +47,8 @@ crowdsec_enroll_key: ""
 crowdsec_traefik_bouncer_key: ""
 
 # --- Authentik (SSO) ---
+# The master FQDN of your identity provider (e.g. sso.yourdomain.com)
+authentik_domain: ""
 # Generate a secret key (openssl rand -base64 36)
 authentik_secret_key: ""              # CHANGE_ME
 authentik_postgresql_password: ""     # CHANGE_ME
