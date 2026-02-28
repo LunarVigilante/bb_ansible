@@ -1,5 +1,5 @@
 # =============================================================================
-# Blackbeard Media — Shared Variables
+# BB Ansible — Shared Variables
 # =============================================================================
 # These defaults apply to ALL nodes unless overridden by host_vars.
 # Secrets go in vault.yml — never store credentials here.
@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 # Each entry: { name: "Label", key: "ssh-ed25519 AAAA..." }
 ssh_authorized_keys:
-  - name: "Blackbeard"
+  - name: "BB"
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEwlw0wpmMJhmgbAkSeFDvSRAOiT7J05IZmwhgRYWE8k"
   - name: "Glen"
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFvhSJDPGgRiEI7TFopGm+rfUg9TCaJ/PX0RjFQXS8Pm"

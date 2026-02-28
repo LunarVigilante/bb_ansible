@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Blackbeard Media — .env Injector
+# BB Ansible — .env Injector
 # =============================================================================
 # Ingests an existing .env file and securely pre-populates all Ansible YAML
 # configuration templates to allow for zero-touch headless provisioning.

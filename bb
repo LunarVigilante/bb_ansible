@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Blackbeard Media — CLI Wrapper (bb)
+# BB Ansible — CLI Wrapper (bb)
 # =============================================================================
 # Usage:
 #   bb setup                     Run the interactive configuration wizard
@@ -93,7 +93,7 @@ VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|be
 show_banner() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════╗"
-    echo "║   Blackbeard Media — Server Manager      ║"
+    echo "║   BB Ansible — Server Manager            ║"
     echo "╚══════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -688,7 +688,7 @@ do_update() {
 do_health() {
     local check="${1:-all}"
 
-    echo -e "${MAGENTA}═══ Blackbeard Health Check ═══${NC}"
+    echo -e "${MAGENTA}═══ BB Health Check ═══${NC}"
     echo ""
 
     case "${check}" in

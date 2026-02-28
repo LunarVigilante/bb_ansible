@@ -1,4 +1,4 @@
-# ~/.p10k.zsh — Managed by Blackbeard Ansible
+# ~/.p10k.zsh — Managed by BB Ansible
 # A curated, lean Powerlevel10k configuration that bypasses the interactive wizard.
 
 'builtin' 'local' '-a' 'p10k_config_opts'

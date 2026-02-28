@@ -1,11 +1,11 @@
-# Blackbeard Media — Ansible Server Provisioning
+# BB Ansible — Ansible Server Provisioning
 
-Automated provisioning for Blackbeard Media share & appbox nodes on Hetzner.  
+Automated provisioning for BB Ansible share & appbox nodes on Hetzner.  
 Inspired by [Saltbox](https://docs.saltbox.dev/) — curl, configure, install.
 
 ## Node Architecture (The 3 Classes)
 
-Blackbeard Media is a distributed, multi-tenant ecosystem. It does not run on a single monolithic server. Instead, roles are mathematically split across three distinct classes of nodes, all tied together by a central Ceph storage fabric.
+BB Ansible is a distributed, multi-tenant ecosystem. It does not run on a single monolithic server. Instead, roles are mathematically split across three distinct classes of nodes, all tied together by a central Ceph storage fabric.
 
 ### 1. The Service Node (`node_type: service`)
 *   **The Brain of the Cluster:** This is your primary control plane. You typically only need **one** service node in your entire cluster.
@@ -29,10 +29,10 @@ Blackbeard Media is a distributed, multi-tenant ecosystem. It does not run on a 
 
 ## Step-by-Step Cluster Deployment
 
-When building a fresh Blackbeard cluster from scratch, you must provision the nodes in a specific mathematical order so the identity matrix bootstraps cleanly. 
+When building a fresh BB cluster from scratch, you must provision the nodes in a specific mathematical order so the identity matrix bootstraps cleanly. 
 
 ### Step 1: Pre-Flight Credentials
-Because Blackbeard is designed for zero-touch deployments, you must define your cluster's identities and API keys in a `.env` file *before* executing the installer. The installer will automatically detect it and inject these into the cluster.
+Because BB is designed for zero-touch deployments, you must define your cluster's identities and API keys in a `.env` file *before* executing the installer. The installer will automatically detect it and inject these into the cluster.
 
 1. Download the sample template to your root directory:
    ```bash

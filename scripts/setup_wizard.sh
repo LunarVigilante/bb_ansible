@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Blackbeard Media — Interactive Setup Wizard
+# BB Ansible — Interactive Setup Wizard
 # =============================================================================
 # Streamlines setting up accounts.yml and settings.yml intelligently based on
 # node type to eliminate unnecessary questions.
@@ -25,7 +25,7 @@ log_warn() { echo -e "${YELLOW}[setup]${NC} $1"; }
 ask()      { echo -ne "\n${BOLD}$1${NC} "; }
 
 echo -e "${MAGENTA}╔═════════════════════════════════════════╗${NC}"
-echo -e "${MAGENTA}║  Blackbeard Media Node Setup Wizard     ║${NC}"
+echo -e "${MAGENTA}║  BB Ansible Node Setup Wizard     ║${NC}"
 echo -e "${MAGENTA}╚═════════════════════════════════════════╝${NC}"
 echo "This wizard will quickly configure your node by skipping"
 echo "questions that don't apply to your use case."

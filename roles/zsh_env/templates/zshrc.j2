@@ -1,4 +1,4 @@
-# ~/.zshrc — Managed by Blackbeard Ansible
+# ~/.zshrc — Managed by BB Ansible
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
@@ -22,12 +22,12 @@ plugins=(
 # Load Oh-My-Zsh
 source $ZSH/oh-my-zsh.sh
 
-# Blackbeard: Source shared system aliases
+# BB: Source shared system aliases
 if [ -f ~/.bash_aliases ]; then
     source ~/.bash_aliases
 fi
 
-# Blackbeard: Zsh-specific conveniences
+# BB: Zsh-specific conveniences
 export EDITOR="nano"
 setopt histignorealldups sharehistory
 

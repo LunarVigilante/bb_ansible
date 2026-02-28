@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Blackbeard Media — Node Settings
+# BB Ansible — Node Settings
 # =============================================================================
 # Configure this node's identity and capabilities.
 # This file is gitignored — never commit it.

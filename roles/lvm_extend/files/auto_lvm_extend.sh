@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Blackbeard Media — Automated LVM Drive Discovery and Extension
+# BB Ansible — Automated LVM Drive Discovery and Extension
 # =============================================================================
 # Purpose: Natively detect all unused drives on the host, automatically wipe them, 
 # and safely append them into the primary LVM storage pool. Skips the boot drive.

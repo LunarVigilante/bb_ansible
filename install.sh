@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Blackbeard Media — Bootstrap Install Script
+# BB Ansible — Bootstrap Install Script
 # =============================================================================
 # Usage:
 #   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
@@ -147,7 +147,7 @@ install_cli() {
 # === Main ===
 echo -e "${CYAN}"
 echo "╔══════════════════════════════════════════════════╗"
-echo "║   Blackbeard Media — Server Bootstrap Installer  ║"
+echo "║   BB Ansible — Server Bootstrap Installer  ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo -e "${NC}"
 

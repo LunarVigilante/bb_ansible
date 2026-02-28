@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Blackbeard Media — Main Playbook
+# BB Ansible — Main Playbook
 # =============================================================================
 # Driven by config files (accounts.yml + settings.yml), not interactive prompts.
 #
@@ -14,7 +14,7 @@
 #   ansible-playbook setup.yml --tags core
 # =============================================================================
 
-- name: Blackbeard Media — Node Provisioning
+- name: BB Ansible — Node Provisioning
   hosts: localhost
   connection: local
   gather_facts: true
