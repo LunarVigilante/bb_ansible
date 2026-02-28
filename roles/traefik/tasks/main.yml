@@ -62,6 +62,14 @@
     group: root
     mode: "0644"
 
+- name: Deploy security headers and rate limiting config
+  ansible.builtin.template:
+    src: security-headers.yml.j2
+    dest: /opt/traefik/security-headers.yml
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Deploy Traefik Docker Compose
   ansible.builtin.template:
     src: docker-compose.yml.j2

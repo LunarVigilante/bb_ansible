@@ -1,0 +1,28 @@
+http:
+  middlewares:
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1s
+
+    security-headers:
+      headers:
+        # Prevent MIME sniffing
+        contentTypeNosniff: true
+        # Block rendering in iframes (clickjacking protection)
+        frameDeny: true
+        # Enable XSS protection filter
+        browserXssFilter: true
+        # Referrer policy to minimize data leakage
+        referrerPolicy: "strict-origin-when-cross-origin"
+        # Force HTTPS via Strict-Transport-Security (1 year + subdomains)
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        # Restrict embedded content origins
+        contentSecurityPolicy: "frame-ancestors 'self'"
+        # Prevent information leakage
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
