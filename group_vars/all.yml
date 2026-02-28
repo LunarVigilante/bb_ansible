@@ -220,7 +220,7 @@ traefik_version: "v3.3"
 
 # TLS domains (each entry generates main + wildcard SAN). Traefik automatically grabs Let's Encrypt wildcards for all domains explicitly listed here.
 traefik_domains_media:
-  - main: "nimbusroute.com"
+  - main: "{{ base_domain }}"
   - main: "wyldhive.com"
   - main: "zen-nest.org"
   - main: "orbitfox.work"
@@ -228,7 +228,7 @@ traefik_domains_media:
   - main: "skyforge.cc"
 
 traefik_domains_standard:
-  - main: "nimbusroute.com"
+  - main: "{{ base_domain }}"
   - main: "wyldhive.com"
 
 # Core entrypoint variable lazily evaluates which array to load depending on node role

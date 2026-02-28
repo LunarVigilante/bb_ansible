@@ -173,7 +173,13 @@ set_val "accounts.yml" "openwebui_openrouter_api_key" "${BB_OPENWEBUI_OPENROUTER
 set_val "accounts.yml" "openwebui_tavily_api_key" "${BB_OPENWEBUI_TAVILY_API_KEY:-}"
 set_val "accounts.yml" "openwebui_google_api_key" "${BB_OPENWEBUI_GOOGLE_API_KEY:-}"
 
+# Base Domain
+set_val "accounts.yml" "base_domain" "${BB_BASE_DOMAIN:-}"
+
 # Authentik SSO
+if [[ -z "${BB_AUTHENTIK_DOMAIN:-}" && -n "${BB_BASE_DOMAIN:-}" ]]; then
+    BB_AUTHENTIK_DOMAIN="auth.${BB_BASE_DOMAIN}"
+fi
 set_val "accounts.yml" "authentik_domain" "${BB_AUTHENTIK_DOMAIN:-}"
 
 if [[ -z "${BB_AUTHENTIK_POSTGRESQL_PASSWORD:-}" || "${BB_AUTHENTIK_POSTGRESQL_PASSWORD:-}" == "CHANGE_ME"* ]]; then
