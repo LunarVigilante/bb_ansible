@@ -2,12 +2,16 @@
 # roles/packages/tasks/main.yml
 # Install system packages via pacman (Arch) or apt (Ubuntu), then bootstrap yay for AUR
 
-- name: Update system and install packages (Arch)
+- name: Upgrade system packages (Arch)
+  community.general.pacman:
+    update_cache: true
+    upgrade: true
+  when: ansible_facts['os_family'] == "Archlinux"
+
+- name: Install required packages (Arch)
   community.general.pacman:
     name: "{{ arch_packages }}"
     state: present
-    update_cache: true
-    upgrade: true
   when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Update system and install packages (Ubuntu)
