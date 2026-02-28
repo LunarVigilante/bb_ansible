@@ -99,7 +99,7 @@
           - base_domain is defined
           - base_domain | length > 0
           - base_domain is regex('^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$')
-        fail_msg: "Invalid base_domain '{{ base_domain }}'. Must be a valid FQDN (e.g. example.com)."
+        fail_msg: "Invalid base_domain '{{ base_domain | default('UNSET') }}'. Must be a valid FQDN (e.g. example.com)."
       tags: ['always']
 
     - name: Display configuration summary

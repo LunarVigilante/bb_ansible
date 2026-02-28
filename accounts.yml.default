@@ -22,6 +22,10 @@ cf_email: "you@example.com"
 cf_auth_key: ""             # Global API key (legacy)
 cf_api_token: ""            # Scoped API token (recommended — Zone:DNS:Edit)
 
+# --- Base Domain ---
+base_domain: ""             # Your primary domain (e.g. example.com)
+authentik_domain: ""        # SSO domain (auto-set to auth.<base_domain> if blank)
+
 # --- Media Server Tokens ---
 plex_token: ""              # Settings → Plex Web → XML → myPlexAccessToken
 jellyfin_api_key: ""        # Dashboard → API Keys → Add
@@ -47,8 +51,6 @@ crowdsec_enroll_key: ""
 crowdsec_traefik_bouncer_key: ""
 
 # --- Authentik (SSO) ---
-# The master FQDN of your identity provider (e.g. sso.yourdomain.com)
-authentik_domain: ""
 # Generate a secret key (openssl rand -base64 36)
 authentik_secret_key: ""              # CHANGE_ME
 authentik_postgresql_password: ""     # CHANGE_ME
@@ -78,3 +80,7 @@ openwebui_tavily_api_key: ""
 openwebui_google_api_key: ""
 openwebui_oauth_client_id: "CHANGE_ME"
 openwebui_oauth_client_secret: "CHANGE_ME"
+
+# --- Tracearr ---
+tracearr_db_password: ""    # Auto-generated during bootstrap if blank
+
