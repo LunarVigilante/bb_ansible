@@ -28,7 +28,7 @@
     # --- Derived variables ---
     - name: Set derived variables
       ansible.builtin.set_fact:
-        node_ip: "{{ ansible_default_ipv4.address }}"
+        node_ip: "{{ ansible_facts['default_ipv4']['address'] }}"
         is_plex: "{{ media_service == 'plex' }}"
         is_emby: "{{ media_service == 'emby' }}"
         is_jellyfin: "{{ media_service == 'jellyfin' }}"
@@ -83,6 +83,7 @@
         that:
           - media_service in ['emby', 'plex', 'jellyfin']
         fail_msg: "Invalid media_service '{{ media_service }}'. Must be emby, plex, or jellyfin."
+      when: node_type in ['appbox', 'share', 'baremetal']
       tags: ['always']
 
     - name: Validate node_type
