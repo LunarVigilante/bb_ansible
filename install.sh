@@ -116,9 +116,14 @@ create_configs() {
 
     # Headless Pre-provisioning via .env detection
     if [[ -f "${ORIGIN_DIR}/.env" ]]; then
-        log_info "Detected headless .env provisioning file..."
-        cp "${ORIGIN_DIR}/.env" "${INSTALL_DIR}/.env"
-        bash "${INSTALL_DIR}/scripts/apply_env.sh"
+        # Safety Check: Do not blindly re-apply .env if the node is already fully configured
+        if grep -q "CHANGE_ME" "${INSTALL_DIR}/accounts.yml" 2>/dev/null; then
+            log_info "Detected headless .env provisioning file..."
+            cp "${ORIGIN_DIR}/.env" "${INSTALL_DIR}/.env"
+            bash "${INSTALL_DIR}/scripts/apply_env.sh"
+        else
+            log_warn "accounts.yml is already configured. Ignoring local .env to prevent overwrites."
+        fi
     fi
 }
 

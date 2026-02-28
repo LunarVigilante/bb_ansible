@@ -2,13 +2,19 @@
 # roles/ceph_client/tasks/ceph_api_user.yml
 # Create a Ceph user via the Ceph Dashboard REST API and export the keyring
 
-- name: Check if Ceph keyring already exists
-  ansible.builtin.stat:
-    path: "/etc/ceph/ceph.client.{{ node_name }}.keyring"
+- name: Check if Ceph keyring already exists locally
+  ansible.builtin.find:
+    paths: /etc/ceph
+    patterns: "ceph.client.*.keyring"
   register: ceph_keyring_stat
 
+- name: Extract existing ceph_client_id if keyring exists
+  ansible.builtin.set_fact:
+    ceph_client_id: "{{ ceph_keyring_stat.files[0].path | regex_replace('^/etc/ceph/ceph\\.client\\.(.*)\\.keyring$', '\\1') }}"
+  when: ceph_keyring_stat.matched > 0
+
 - name: Create Ceph user via REST API
-  when: not ceph_keyring_stat.stat.exists
+  when: ceph_keyring_stat.matched == 0
   block:
     - name: Authenticate to Ceph Dashboard
       ansible.builtin.uri:
@@ -28,6 +34,35 @@
         ceph_jwt: "{{ ceph_auth.json.token }}"
       no_log: true
 
+    - name: Dynamically determine unused Ceph identity prefix
+      ansible.builtin.shell: |
+        BASE_NAME="{{ node_name }}"
+        TARGET_NAME="$BASE_NAME"
+        COUNTER=1
+        
+        while true; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.${TARGET_NAME}" -H "Authorization: Bearer {{ ceph_jwt }}" -H "Accept: application/vnd.ceph.api.v1.0+json" -k)
+            
+            if [ "$HTTP_STATUS" == "404" ] || [ "$HTTP_STATUS" == "500" ]; then
+                # User does not exist, safe to grab
+                echo "$TARGET_NAME"
+                exit 0
+            elif [ "$HTTP_STATUS" == "200" ]; then
+                # User exists. Increment suffix counter mathematically.
+                COUNTER=$((COUNTER + 1))
+                TARGET_NAME="${BASE_NAME}-v${COUNTER}"
+            else
+                echo "Error: Unexpected HTTP status $HTTP_STATUS from Ceph API" >&2
+                exit 1
+            fi
+        done
+      register: ceph_identity_check
+      changed_when: false
+
+    - name: Set dynamic Ceph client ID
+      ansible.builtin.set_fact:
+        ceph_client_id: "{{ ceph_identity_check.stdout }}"
+
     - name: Create Ceph user with capabilities
       ansible.builtin.uri:
         url: "{{ vault_ceph_dashboard_url }}/api/cluster/user"
@@ -38,7 +73,7 @@
           Accept: "application/vnd.ceph.api.v1.0+json"
           Content-Type: "application/json"
         body:
-          user_entity: "client.{{ node_name }}"
+          user_entity: "client.{{ ceph_client_id }}"
           capabilities:
             mds: >-
               allow r fsname=cephfs path=/ network {{ node_ip }}/32,
@@ -66,7 +101,7 @@
 
     - name: Export Ceph user keyring
       ansible.builtin.uri:
-        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.{{ node_name }}/export"
+        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.{{ ceph_client_id }}/export"
         method: GET
         headers:
           Authorization: "Bearer {{ ceph_jwt }}"
@@ -79,7 +114,7 @@
     - name: Write Ceph keyring to file
       ansible.builtin.copy:
         content: "{{ ceph_keyring_export.content }}"
-        dest: "/etc/ceph/ceph.client.{{ node_name }}.keyring"
+        dest: "/etc/ceph/ceph.client.{{ ceph_client_id }}.keyring"
         owner: root
         group: root
         mode: "0600"
