@@ -1,0 +1,41 @@
+# Uptime Kuma — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/uptime-kuma:/app/data
+    environment:
+      - UPTIME_KUMA_DOCKER_HOST=tcp://uptime-proxy:2375
+    depends_on:
+      - uptime-proxy
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime.rule=Host(`uptime.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.uptime.entrypoints=websecure"
+      - "traefik.http.routers.uptime.tls=true"
+      - "traefik.http.routers.uptime.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.uptime.middlewares=authentik@file"
+      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
+
+  uptime-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: uptime-proxy
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - CONTAINERS=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

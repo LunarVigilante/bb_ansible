@@ -107,44 +107,6 @@ services:
       - proxy
 {% endif %}
 
-{% if enable_uptime_kuma | default(false) | bool %}
-  uptime-kuma:
-    image: louislam/uptime-kuma:latest
-    container_name: uptime
-    restart: unless-stopped
-    cgroup_parent: kronos.slice
-    volumes:
-      - /opt/appdata/uptime-kuma:/app/data
-    environment:
-      - UPTIME_KUMA_DOCKER_HOST=tcp://uptime-proxy:2375
-    depends_on:
-      - uptime-proxy
-    networks:
-      - proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.uptime.rule=Host(`status.{{ traefik_domains[0].main }}`)"
-      - "traefik.http.routers.uptime.entrypoints=websecure"
-      - "traefik.http.routers.uptime.tls=true"
-      - "traefik.http.routers.uptime.tls.certresolver=letsEncrypt"
-      # Uptime Kuma usually has public status pages, skipping SSO on root, or protect it.
-      # Decided to protect.
-      - "traefik.http.routers.uptime.middlewares=authentik@file"
-      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
-
-  uptime-proxy:
-    image: tecnativa/docker-socket-proxy
-    container_name: uptime-proxy
-    restart: unless-stopped
-    cgroup_parent: kronos.slice
-    environment:
-      - CONTAINERS=1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy
-{% endif %}
-
 {% if enable_speedtest | default(false) | bool %}
   speedtest:
     image: lscr.io/linuxserver/librespeed:latest

@@ -75,6 +75,7 @@ declare -A TAG_DESCRIPTIONS=(
     ["app_managers"]="Ecosystem Managers (Autoscan, Tracearr, Unpackerr)"
     ["open_webui"]="Open WebUI (AI Stack) — Service node only"
     ["enclosed"]="Enclosed (Secure File Sharing) — Service node only"
+    ["uptime_kuma"]="Uptime Kuma monitoring platform — Service node only"
     ["validate"]="Pre-flight: Ansible syntax check + dry-run --check mode"
     ["audit"]="Security audit: scan for exposed secrets, weak permissions, misconfigs"
 )
@@ -83,9 +84,9 @@ declare -A TAG_DESCRIPTIONS=(
 CORE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,docker,traefik"
 
 # What "node" expands to (everything):
-NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed"
+NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
 
-VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|apps"
+VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma|apps"
 
 # --- Functions ---
 
@@ -355,9 +356,9 @@ resolve_tags() {
                 resolved="${resolved:+${resolved},}${NODE_TAGS}"
                 ;;
             apps)
-                resolved="${resolved:+${resolved},}app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed"
+                resolved="${resolved:+${resolved},}app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
                 ;;
-            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed)
+            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma)
                 resolved="${resolved:+${resolved},}${tag}"
                 ;;
             *)

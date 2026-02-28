@@ -212,6 +212,10 @@
       tags: ['enclosed', 'apps', 'core', 'node']
       when: "'svc' in inventory_hostname"
 
+    - role: uptime_kuma
+      tags: ['uptime_kuma', 'apps', 'core', 'node']
+      when: node_type == 'service'
+
     # ═══ Deep Observability (PLG Stack) ═══
     - role: observability_core
       tags: ['observability_core', 'observability', 'core', 'node']

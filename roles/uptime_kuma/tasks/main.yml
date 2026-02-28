@@ -1,0 +1,28 @@
+---
+# roles/uptime_kuma/tasks/main.yml
+# Deploy Uptime Kuma monitoring platform (service node only)
+
+- name: Create Uptime Kuma appdata directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/appdata/uptime-kuma
+    - /opt/compose/uptime_kuma
+
+- name: Deploy Uptime Kuma Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/uptime_kuma/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Uptime Kuma stack
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/uptime_kuma
+  changed_when: true
