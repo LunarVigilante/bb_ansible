@@ -9,7 +9,15 @@
     owner: root
     group: root
     mode: "0755"
-  loop: "{{ qbittorrent_instances | default([]) + sabnzbd_instances | default([]) + cross_seed_instances | default([]) + autobrr_instances | default([]) + omegabrr_instances | default([]) + qbit_manage_instances | default([]) }}"
+  loop: >-
+    {{
+      qbittorrent_instances | default([]) +
+      sabnzbd_instances | default([]) +
+      cross_seed_instances | default([]) +
+      autobrr_instances | default([]) +
+      omegabrr_instances | default([]) +
+      qbit_manage_instances | default([])
+    }}
   when: item.name is defined
 
 - name: Create app_torrents compose directory

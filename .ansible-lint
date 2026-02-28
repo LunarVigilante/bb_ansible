@@ -1,0 +1,12 @@
+# .ansible-lint — Blackbeard Media
+# Configuration for ansible-lint CI pipeline
+
+# Skip rules that don't apply to a self-provisioning infrastructure project.
+# var-naming[no-role-prefix] is designed for shared Galaxy roles, not
+# a monolithic playbook where all roles are internal and self-contained.
+skip_list:
+  - var-naming[no-role-prefix]
+  - latest[git]
+
+# Line length limit (default 160 is fine)
+# yaml[line-length] violations are fixed in code

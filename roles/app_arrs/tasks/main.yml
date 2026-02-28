@@ -9,7 +9,20 @@
     owner: root
     group: root
     mode: "0755"
-  loop: "{{ sonarr_instances | default([]) + radarr_instances | default([]) + readarr_instances | default([]) + lidarr_instances | default([]) + bazarr_instances | default([]) + prowlarr_instances | default([]) + mylar_instances | default([]) + seerr_instances | default([]) + huntarr_instances | default([]) + doplarr_instances | default([]) + flaresolverr_instances | default([]) }}"
+  loop: >-
+    {{
+      sonarr_instances | default([]) +
+      radarr_instances | default([]) +
+      readarr_instances | default([]) +
+      lidarr_instances | default([]) +
+      bazarr_instances | default([]) +
+      prowlarr_instances | default([]) +
+      mylar_instances | default([]) +
+      seerr_instances | default([]) +
+      huntarr_instances | default([]) +
+      doplarr_instances | default([]) +
+      flaresolverr_instances | default([])
+    }}
   when: item.name is defined
 
 - name: Create app_arrs compose directory

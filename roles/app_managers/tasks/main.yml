@@ -9,7 +9,14 @@
     owner: root
     group: root
     mode: "0755"
-  loop: "{{ autoscan_instances | default([]) + notifiarr_instances | default([]) + unpackerr_instances | default([]) + scrutiny_instances | default([]) + mkvtoolnix_instances | default([]) }}"
+  loop: >-
+    {{
+      autoscan_instances | default([]) +
+      notifiarr_instances | default([]) +
+      unpackerr_instances | default([]) +
+      scrutiny_instances | default([]) +
+      mkvtoolnix_instances | default([])
+    }}
   when: item.name is defined
 
 - name: Create Tracearr directories
