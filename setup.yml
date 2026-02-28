@@ -145,8 +145,8 @@
     - role: crowdsec
       tags: ['crowdsec']
 
-    - role: diun
-      tags: ['diun']
+    - role: dockwatch
+      tags: ['dockwatch']
 
     - role: beszel
       tags: ['beszel']
@@ -166,13 +166,9 @@
       tags: ['autoscan']
       when: is_share | bool
 
-    - role: gluetun
-      tags: ['gluetun']
-      when: is_plex | bool
-
     - role: gluetun_watcher
       tags: ['gluetun_watcher']
-      when: is_plex | bool
+      when: node_type == 'appbox'
 
     - role: appdata_backup
       tags: ['backup', 'core', 'node']
