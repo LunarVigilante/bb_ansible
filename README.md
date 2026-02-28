@@ -46,32 +46,49 @@ You must establish the identity core (Authentik) first, as all other nodes will 
    bb setup
    ```
    *   *(Choose `service` for Node Type, and skip Media Provider config since it doesn't stream).*
-4. Execute the deployment:
+4. **(Optional)** If you prefer headless automation, copy the `.env` template instead of using the wizard:
+   ```bash
+   cp .env.sample .env
+   nano .env # Fill in BB_ADMIN_PASSWORD, BB_CF_EMAIL, etc.
+   ```
+5. Execute the deployment:
    ```bash
    bb install node
    ```
-5. Log into your new Authentik dashboard (e.g. `https://sso.yourdomain.com`) using the auto-generated password outputted by the wizard, and establish your core user identity.
+6. Log into your new Authentik dashboard (e.g. `https://sso.yourdomain.com`) using the auto-generated password outputted by the wizard (or defined in your `.env`), and establish your core user identity.
 
 ### Step 2: Provision the Feeder Node
 Now that SSO is online, spin up the download engine.
 
 1. Boot the Feeder hardware.
 2. Bootstrap the box: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
-3. Enter setup: `cd /srv/git/blackbeard && bb setup`
+3. Configure identity *(Interactive)*: `cd /srv/git/blackbeard && bb setup`
    *   *(Choose `feeder` for Node Type).*
-4. Deploy the stack: `bb install node`
-5. The system will automatically acquire its Ceph keyring, mount the unified `/data` arrays, deploy the *Arr stack, and hook its web dashboards into the Traefik router on the Service node.
+4. **(Optional)** Configure identity *(Headless)*: 
+   ```bash
+   cd /srv/git/blackbeard
+   cp .env.sample .env
+   nano .env # (Define node credentials)
+   ```
+5. Deploy the stack: `bb install node`
+6. The system will automatically acquire its Ceph keyring, mount the unified `/data` arrays, deploy the *Arr stack, and hook its web dashboards into the Traefik router on the Service node.
 
 ### Step 3: Provision Media Nodes (Appboxes/Shares)
 Finally, generate edge nodes for users to consume the media.
 
 1. Boot the Media hardware (preferably with a GPU/QuickSync).
 2. Bootstrap: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
-3. Enter setup: `cd /srv/git/blackbeard && bb setup`
+3. Configure identity *(Interactive)*: `cd /srv/git/blackbeard && bb setup`
    *   *(Choose `appbox` or `share` for Node Type).*
    *   *(Choose `emby`, `plex`, or `jellyfin` for the media platform).*
-4. Deploy the stack: `bb install node`
-5. The media node will mount the Ceph `/media` array strictly as **Read-Only** to protect your library, dynamically request an ingress certificate from Cloudflare, and spin up the designated streaming container.
+4. **(Optional)** Configure identity *(Headless)*: 
+   ```bash
+   cd /srv/git/blackbeard
+   cp .env.sample .env
+   nano .env # (Define node credentials and media service type)
+   ```
+5. Deploy the stack: `bb install node`
+6. The media node will mount the Ceph `/media` array strictly as **Read-Only** to protect your library, dynamically request an ingress certificate from Cloudflare, and spin up the designated streaming container.
 
 ## BB Commands
 
