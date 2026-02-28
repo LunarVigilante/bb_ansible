@@ -59,8 +59,11 @@ detect_os() {
 # --- Install dependencies ---
 install_deps_arch() {
     log_info "Installing dependencies via pacman..."
-    pacman -Sy --noconfirm --needed \
-        ansible git python nano vim
+    pacman -Sy --noconfirm --needed ansible-core git python python-passlib nano vim
+    
+    # Force shell to recognize new binaries immediately
+    hash -r || true
+
     # Install community.docker collection
     ansible-galaxy collection install community.general community.docker --force 2>/dev/null || true
 }
@@ -68,8 +71,7 @@ install_deps_arch() {
 install_deps_ubuntu() {
     log_info "Installing dependencies via apt..."
     apt-get update -qq
-    apt-get install -y -qq \
-        software-properties-common git python3 python3-pip python3-passlib nano vim
+    apt-get install -y -qq software-properties-common git python3 python3-pip python3-passlib nano vim
     # Add Ansible PPA if not present
     if ! command -v ansible &> /dev/null; then
         add-apt-repository --yes ppa:ansible/ansible
