@@ -28,8 +28,10 @@ REPO_BRANCH="${BB_REPO_BRANCH:-main}"
 # Intelligently detect if piped via curl or run explicitly to determine install directory
 if [[ "$0" == *"bash"* || "$0" == *"sh" ]]; then
     INSTALL_DIR="${BB_INSTALL_DIR:-$HOME/blackbeard}"
+    ORIGIN_DIR="${PWD}"
 else
     INSTALL_DIR="${BB_INSTALL_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+    ORIGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
 fi
 
 log_info()  { echo -e "${CYAN}[bb]${NC} $1"; }
@@ -110,6 +112,13 @@ create_configs() {
         log_warn "Created settings.yml — EDIT THIS FILE with your node settings!"
     else
         log_ok "settings.yml already exists, skipping."
+    fi
+
+    # Headless Pre-provisioning via .env detection
+    if [[ -f "${ORIGIN_DIR}/.env" ]]; then
+        log_info "Detected headless .env provisioning file..."
+        cp "${ORIGIN_DIR}/.env" "${INSTALL_DIR}/.env"
+        bash "${INSTALL_DIR}/scripts/apply_env.sh"
     fi
 }
 
