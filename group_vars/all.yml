@@ -82,7 +82,6 @@ arch_packages:
 # Packages installed via yay (AUR)
 aur_packages:
   - ceph-bin
-  - mergerfs
 
 # ---------------------------------------------------------------------------
 # Packages — Ubuntu (equivalent names)

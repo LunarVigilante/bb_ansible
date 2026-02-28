@@ -22,6 +22,16 @@
     cache_valid_time: 3600
   when: ansible_facts['os_family'] == "Debian"
 
+# --- AUR helper (yay) — Arch only ---
+
+- name: Grant admin passwordless sudo for pacman (required by yay)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/yay-admin
+    content: "admin ALL=(ALL) NOPASSWD: /usr/bin/pacman\n"
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: ansible_facts['os_family'] == "Archlinux"
+
 # --- Yay (AUR helper) — Arch only ---
 
 - name: Check if yay is already installed
