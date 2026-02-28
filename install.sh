@@ -61,7 +61,7 @@ install_deps_arch() {
     log_info "Installing dependencies via pacman..."
     pacman -Syu --noconfirm --needed \
         ansible git python python-pip python-passlib python-jmespath \
-        community-general-docs 2>/dev/null || true
+        community-general-docs nano vim 2>/dev/null || true
     # Install community.docker collection
     ansible-galaxy collection install community.general community.docker --force 2>/dev/null || true
 }
@@ -70,7 +70,7 @@ install_deps_ubuntu() {
     log_info "Installing dependencies via apt..."
     apt-get update -qq
     apt-get install -y -qq \
-        software-properties-common git python3 python3-pip python3-passlib
+        software-properties-common git python3 python3-pip python3-passlib nano vim
     # Add Ansible PPA if not present
     if ! command -v ansible &> /dev/null; then
         add-apt-repository --yes ppa:ansible/ansible
