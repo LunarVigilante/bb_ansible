@@ -218,14 +218,21 @@ beszel_primary_sensor: "coretemp_package_id_0"
 # ---------------------------------------------------------------------------
 traefik_version: "v3.3"
 
-# TLS domains (each entry generates main + wildcard SAN)
-traefik_domains:
-  - main: "pirately.cc"
+# TLS domains (each entry generates main + wildcard SAN). Traefik automatically grabs Let's Encrypt wildcards for all domains explicitly listed here.
+traefik_domains_media:
+  - main: "nimbusroute.com"
   - main: "wyldhive.com"
   - main: "zen-nest.org"
   - main: "orbitfox.work"
   - main: "purevino.uk"
   - main: "skyforge.cc"
+
+traefik_domains_standard:
+  - main: "nimbusroute.com"
+  - main: "wyldhive.com"
+
+# Core entrypoint variable lazily evaluates which array to load depending on node role
+traefik_domains: "{{ traefik_domains_media if (media_service | default('')) in ['plex', 'emby', 'jellyfin'] else traefik_domains_standard }}"
 
 # ---------------------------------------------------------------------------
 # Gluetun — VPN (Plex nodes)
