@@ -98,26 +98,15 @@ setup_repo() {
     cd "${INSTALL_DIR}"
 }
 
-# --- Create config files from templates ---
+# --- Create config files from templates (always overwrite — install.sh is one-time bootstrap) ---
 create_configs() {
-    local first_install="false"
+    cp "${INSTALL_DIR}/accounts.yml.default" "${INSTALL_DIR}/accounts.yml"
+    chmod 600 "${INSTALL_DIR}/accounts.yml"
+    log_ok "Created accounts.yml (locked 0600)"
 
-    if [[ ! -f "${INSTALL_DIR}/accounts.yml" ]]; then
-        cp "${INSTALL_DIR}/accounts.yml.default" "${INSTALL_DIR}/accounts.yml"
-        chmod 600 "${INSTALL_DIR}/accounts.yml"
-        log_warn "Created accounts.yml (locked 0600) — EDIT THIS FILE with your credentials!"
-        first_install="true"
-    else
-        log_ok "accounts.yml already exists, skipping."
-    fi
-
-    if [[ ! -f "${INSTALL_DIR}/settings.yml" ]]; then
-        cp "${INSTALL_DIR}/settings.yml.default" "${INSTALL_DIR}/settings.yml"
-        chmod 600 "${INSTALL_DIR}/settings.yml"
-        log_warn "Created settings.yml (locked 0600) — EDIT THIS FILE with your node settings!"
-    else
-        log_ok "settings.yml already exists, skipping."
-    fi
+    cp "${INSTALL_DIR}/settings.yml.default" "${INSTALL_DIR}/settings.yml"
+    chmod 600 "${INSTALL_DIR}/settings.yml"
+    log_ok "Created settings.yml (locked 0600)"
 
     # Headless Pre-provisioning via .env detection
     # Search order: origin dir (where curl was run), $HOME, install dir
@@ -134,15 +123,11 @@ create_configs() {
     fi
 
     if [[ -n "${env_source}" ]]; then
-        if [[ "${first_install}" == "true" ]]; then
-            log_info "Executing headless .env injection into config files..."
-            if [[ "${env_source}" != "${INSTALL_DIR}/.env" ]]; then
-                cp "${env_source}" "${INSTALL_DIR}/.env"
-            fi
-            bash "${INSTALL_DIR}/scripts/apply_env.sh"
-        else
-            log_info "Node already configured. Ignoring .env to preserve accounts.yml."
+        log_info "Executing headless .env injection into config files..."
+        if [[ "${env_source}" != "${INSTALL_DIR}/.env" ]]; then
+            cp "${env_source}" "${INSTALL_DIR}/.env"
         fi
+        bash "${INSTALL_DIR}/scripts/apply_env.sh"
     else
         log_warn "No .env file found. You will need to manually edit accounts.yml and settings.yml."
     fi
