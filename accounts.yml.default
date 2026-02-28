@@ -10,7 +10,7 @@
 # =============================================================================
 
 # --- Admin User ---
-admin_password: "CHANGE_ME_your_secure_password"
+admin_password: ""          # CHANGE_ME
 
 # --- Ceph Dashboard REST API ---
 ceph_dashboard_url: "https://ceph-dashboard.example.com:8443"
@@ -44,12 +44,12 @@ autoscan_password: ""
 # Enroll key for community blocklist (free at https://app.crowdsec.net)
 crowdsec_enroll_key: ""
 # Predetermined API key for the Traefik bouncer plugin
-crowdsec_traefik_bouncer_key: "CHANGE_ME_crowdsec_bouncer_key"
+crowdsec_traefik_bouncer_key: ""      # CHANGE_ME
 
 # --- Authentik (SSO) ---
 # Generate a secret key (openssl rand -base64 36)
-authentik_secret_key: "CHANGE_ME_authentik_secret_key"
-authentik_postgresql_password: "CHANGE_ME_authentik_db_password"
+authentik_secret_key: ""              # CHANGE_ME
+authentik_postgresql_password: ""     # CHANGE_ME
 
 # --- Beszel (Server Monitoring) ---
 # Generate the hub key from your Beszel Hub web UI → Add System
@@ -68,7 +68,7 @@ musics_api_key: ""
 
 # --- Open WebUI (AI Services) ---
 openwebui_postgres_user: "postgres"
-openwebui_postgres_password: "CHANGE_ME_openwebui_db_password"
+openwebui_postgres_password: ""
 openwebui_postgres_db: "openwebui"
 openwebui_openrouter_api_key: ""
 openwebui_tavily_api_key: ""
