@@ -420,6 +420,7 @@ do_install() {
     cd "${BB_DIR}"
 
     /usr/bin/ansible-playbook setup.yml \
+        -i localhost, \
         --tags "${tags}" \
         "$@" \
         2>&1 | tee "${log_file}"
@@ -471,6 +472,7 @@ do_reconfigure() {
     # Run a limited set of tasks to apply variable changes
     # This should be a lightweight playbook or specific tags that don't re-provision services
     /usr/bin/ansible-playbook setup.yml \
+        -i localhost, \
         --tags "base,users,ssh,tcp,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed" \
         --skip-tags "packages,lvm,ethtool" \
         -e "ansible_skip_install_checks=true" \
@@ -498,7 +500,7 @@ do_validate() {
 
     # Step 1: Ansible syntax check
     echo -e "${CYAN}━━━ Syntax Check ━━━${NC}"
-    if /usr/bin/ansible-playbook setup.yml --syntax-check 2>&1; then
+    if /usr/bin/ansible-playbook setup.yml -i localhost, --syntax-check 2>&1; then
         log_ok "Syntax validation passed."
     else
         log_error "Syntax validation failed — fix errors before deploying."
@@ -510,7 +512,7 @@ do_validate() {
     echo -e "${CYAN}━━━ Dry-Run (--check mode) ━━━${NC}"
     log_info "Simulating full deployment without making changes..."
     echo ""
-    /usr/bin/ansible-playbook setup.yml --check --diff 2>&1 | tail -20
+    /usr/bin/ansible-playbook setup.yml -i localhost, --check --diff 2>&1 | tail -20
     log_ok "Dry-run complete. Review the diff output above."
 }
 
