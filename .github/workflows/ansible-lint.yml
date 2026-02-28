@@ -1,0 +1,32 @@
+# .github/workflows/ansible-lint.yml
+name: Ansible Lint
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - '**.yml'
+      - '**.yaml'
+      - '**.j2'
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible + lint
+        run: |
+          pip install ansible-core ansible-lint
+
+      - name: Install Galaxy collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml --force
+
+      - name: Run ansible-lint
+        run: |
+          ansible-lint setup.yml --strict

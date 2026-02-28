@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# =============================================================================
+# SSH Login Alert — Discord Webhook Notifier
+# =============================================================================
+# Triggered by PAM on successful SSH authentication.
+# Sends a Discord embed with the user, source IP, and hostname.
+# =============================================================================
+
+WEBHOOK_URL="{{ vault_discord_webhook_general }}"
+
+# Only fire on session open events
+if [[ "${PAM_TYPE}" != "open_session" ]]; then
+    exit 0
+fi
+
+HOSTNAME="$(hostname)"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+PAYLOAD=$(cat <<EOF
+{
+  "embeds": [{
+    "title": "🔐 SSH Login Alert",
+    "color": 16744448,
+    "fields": [
+      { "name": "Host", "value": "${HOSTNAME}", "inline": true },
+      { "name": "User", "value": "${PAM_USER}", "inline": true },
+      { "name": "Source IP", "value": "${PAM_RHOST:-local}", "inline": true }
+    ],
+    "timestamp": "${TIMESTAMP}"
+  }]
+}
+EOF
+)
+
+# Non-blocking fire-and-forget — must not delay shell startup
+curl -s -o /dev/null -H "Content-Type: application/json" -d "${PAYLOAD}" "${WEBHOOK_URL}" &
+disown
+exit 0

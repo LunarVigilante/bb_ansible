@@ -53,3 +53,24 @@
     name: fail2ban
     enabled: true
     state: started
+
+# --- SSH Login Alerting (Discord Webhook) ---
+
+- name: Deploy SSH login alert script
+  ansible.builtin.template:
+    src: ssh-login-alert.sh.j2
+    dest: /opt/auth/ssh-login-alert.sh
+    owner: root
+    group: root
+    mode: "0700"
+  no_log: true
+  when: vault_discord_webhook_general | default('') | length > 0
+
+- name: Enable PAM session hook for SSH login alerts
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    line: "session optional pam_exec.so /opt/auth/ssh-login-alert.sh"
+    state: present
+    insertafter: EOF
+  when: vault_discord_webhook_general | default('') | length > 0
+
