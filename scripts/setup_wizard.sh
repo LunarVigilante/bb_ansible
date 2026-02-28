@@ -76,6 +76,11 @@ inject_ssh_key() {
 
     local file="${BB_DIR}/group_vars/all.yml"
 
+    # Pre-flight Idempotency Check: if the base64 string exists exactly, abort injection
+    if grep -Fq "${key_string}" "$file"; then
+        return 0
+    fi
+
     # Use awk to find the exact array block and append a new dictionary entry at the top of the block
     awk -v list="${list_name}:" -v name="\"${key_label}\"" -v key="\"${key_string}\"" '
     $0 == list {
@@ -177,6 +182,11 @@ if [[ "${is10g}" == "y" || "${is10g}" == "Y" || "${is10g}" == "true" ]]; then
 elif [[ "${is10g}" == "n" || "${is10g}" == "N" || "${is10g}" == "false" ]]; then
     set_val "settings.yml" "is_10g_node" "false" "true"
 fi
+
+curr_ignore=$(get_val "settings.yml" "lvm_ignore_drives")
+ask "Drives to protect from LVM Wipe (e.g. sda,sdb) [${curr_ignore}]:"
+read -r ignore_drives
+[[ -n "${ignore_drives}" ]] && set_val "settings.yml" "lvm_ignore_drives" "${ignore_drives}"
 
 
 # --- Part 2: Accounts & Secrets ---

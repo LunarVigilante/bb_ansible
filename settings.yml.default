@@ -24,6 +24,8 @@ node_type: "appbox"
 is_10g_node: false
 
 # --- Settings ---
+# Storage: Comma-separated list of drives to insulate from auto-wipe (e.g., "sda,sdb")
+lvm_ignore_drives: ""
 
 # --- Emby Settings ---
 # Emby tier (only applies when media_service: emby)

@@ -62,6 +62,11 @@ inject_ssh_key() {
 
     local file="${BB_DIR}/group_vars/all.yml"
 
+    # Pre-flight Idempotency Check: if the base64 string exists exactly, abort injection
+    if grep -Fq "${key_string}" "$file"; then
+        return 0
+    fi
+
     # Use awk to find the exact array block and append a new dictionary entry at the top of the block
     awk -v list="${list_name}:" -v name="\"${key_label}\"" -v key="\"${key_string}\"" '
     $0 == list {
@@ -96,6 +101,8 @@ if [[ "${BB_IS_10G_NODE:-}" == "true" || "${BB_IS_10G_NODE:-}" == "true" ]]; the
 else
     set_val "settings.yml" "is_10g_node" "false" "true"
 fi
+
+set_val "settings.yml" "lvm_ignore_drives" "${BB_LVM_IGNORE_DRIVES:-}"
 
 # =============================================================================
 # Apply accounts.yml & global identites

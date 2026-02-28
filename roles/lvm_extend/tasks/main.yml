@@ -9,7 +9,7 @@
     mode: "0755"
 
 - name: Execute automated secondary drive discovery and formatting
-  ansible.builtin.command: /usr/local/bin/auto_lvm_extend.sh
+  ansible.builtin.command: "/usr/local/bin/auto_lvm_extend.sh '{{ lvm_ignore_drives | default('') }}'"
   register: lvm_auto_result
   changed_when: "'Successfully appended' in lvm_auto_result.stdout"
 

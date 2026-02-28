@@ -28,6 +28,9 @@ for cmd in lsblk pvs vgs lvs wipefs pvcreate vgextend lvextend xfs_growfs; do
     fi
 done
 
+# Optional first argument: comma-separated list of drives to explicitly ignore (e.g., sda,sdb)
+IGNORE_LIST="${1:-}"
+
 # Step 1: Detect the root volume group
 root_device=$(findmnt -n -o SOURCE /)
 if [[ -z "$root_device" ]]; then
@@ -92,6 +95,14 @@ candidate_disks=$(lsblk -nd -o NAME,TYPE | awk '$2=="disk"{print "/dev/"$1}')
 for candidate in $candidate_disks; do
     if [[ "${protected_disks[$candidate]:-}" == "1" ]]; then
         log_warn "Skipping root/enrolled disk: $candidate"
+        continue
+    fi
+
+    # Check against explicit operator ignore list
+    # Strip /dev/ from candidate for exact matching
+    base_candidate="${candidate#/dev/}"
+    if [[ ",${IGNORE_LIST}," == *",${base_candidate},"* ]]; then
+        log_warn "Disk matched explicit operator ignore list ($base_candidate). Insulation active. Skipping."
         continue
     fi
 
