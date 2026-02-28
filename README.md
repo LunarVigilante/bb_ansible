@@ -31,13 +31,13 @@ Blackbeard Media is a distributed, multi-tenant ecosystem. It does not run on a 
 
 When building a fresh Blackbeard cluster from scratch, you must provision the nodes in a specific mathematical order so the identity matrix bootstraps cleanly. 
 
-### Step 2: Configure the `.env` Blueprint (Headless Mode)
-If you want a fully automated, zero-touch deployment (highly recommended), you must define your cluster's identities and API keys in a `.env` file *before* executing the installer. The installer will automatically inject these into the cluster.
+### Step 1: Pre-Flight Credentials (Optional Headless Mode)
+If you want a fully automated, zero-touch deployment (highly recommended), you must define your cluster's identities and API keys in a `.env` file *before* executing the installer. The installer will automatically detect it and inject these into the cluster.
 
-1. Navigate to the codebase and copy the sample template:
+1. Download the sample template to your root directory:
    ```bash
-   cd /srv/git/blackbeard
-   cp .env.sample .env
+   curl -sO https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/.env.sample
+   mv .env.sample .env
    ```
 2. Open the file in a text editor:
    ```bash
@@ -52,40 +52,63 @@ If you want a fully automated, zero-touch deployment (highly recommended), you m
    *   `BB_CEPH_DASHBOARD_PASSWORD=ceph_pass`      *(Required: Ceph admin password)*
    *   *(Fill in any other optional API keys you have, such as Discord webhooks or Media APIs. See `accounts.yml.default` for explanations).*
 4. Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+*(Note: Keep this `.env` file handy. You will copy it to the other nodes before you bootstrap them.)*
 
-### Step 3: Provision the Service Node
+### Step 2: Provision the Service Node
 You must establish the identity core (Authentik) first, as all other nodes will eventually route their subdomains to it.
 
 1. Install a fresh OS (Debian/Arch) on your Service hardware.
-2. Bootstrap the box: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
-3. If using Headless mode (`.env`), map your node target:
+2. **If using Headless mode (`.env`)**, ensure your `.env` file is in your current directory, then tell the installer what you are building:
    ```bash
-   cd /srv/git/blackbeard
    export BB_NODE_TYPE=service
    ```
-4. If using Interactive mode (`bb setup`), navigate the wizard to select `service` as the node type, and skip Media Provider configuration. **You will be prompted to paste your `admin_password`, `cf_api_token`, and other credentials into `accounts.yml` manually via nano.**
+3. Become root and run the bootstrap installer:
+   ```bash
+   su -
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   ```
+4. **If using Interactive mode (`bb setup`)**, you skipped the `.env` file. You must navigate the wizard to select `service` as the node type, and skip Media Provider configuration. **You will be prompted to paste your `admin_password`, `cf_api_token`, and other credentials into `accounts.yml` manually via nano.**
+   ```bash
+   cd /srv/git/blackbeard
+   bb setup
+   ```
 5. Execute the deployment:
    ```bash
    bb install node
    ```
 6. Log into your new Authentik dashboard (e.g. `https://sso.yourdomain.com`) using the auto-generated Postgres and JWT passwords outputted by the log (or defined in your `.env`), and establish your core user identity.
 
-### Step 4: Provision the Feeder Node
+### Step 3: Provision the Feeder Node
 Now that SSO is online, spin up the download engine.
 
 1. Boot the Feeder hardware.
-2. Bootstrap the box: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
-3. **If using Headless mode (`.env`):** Bring your `.env` file over from the Service node and place it in `/srv/git/blackbeard/`. Then run `export BB_NODE_TYPE=feeder`.
-4. **If using Interactive mode:** Run `cd /srv/git/blackbeard && bb setup`. Choose `feeder` as the Node Type. **Make sure you copy the exact same credentials you manually entered onto the Service node into this node's `accounts.yml`.**
+2. **If using Headless mode (`.env`):** Bring your `.env` file over from the Service node and place it in your root directory. Then run:
+   ```bash
+   export BB_NODE_TYPE=feeder
+   ```
+3. Become root and run the bootstrap installer:
+   ```bash
+   su -
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   ```
+4. **If using Interactive mode:** Run `cd /srv/git/blackbeard && bb setup`. Choose `feeder` as the Node Type. **Make sure you copy the exact same API credentials you manually entered onto the Service node into this node's `accounts.yml`.**
 5. Deploy the stack: `bb install node`
 6. The system will automatically acquire its Ceph keyring, mount the unified `/data` arrays, deploy the *Arr stack, and hook its web dashboards into the Traefik router on the Service node.
 
-### Step 5: Provision Media Nodes (Appboxes/Shares)
+### Step 4: Provision Media Nodes (Appboxes/Shares)
 Finally, generate edge nodes for users to consume the media.
 
 1. Boot the Media hardware (preferably with a GPU/QuickSync).
-2. Bootstrap the box: `curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash`
-3. **If using Headless mode (`.env`):** Bring your `.env` file over from the Service node and place it in `/srv/git/blackbeard/`. Then run `export BB_NODE_TYPE=appbox` and `export BB_MEDIA_SERVICE=plex` (or emby/jellyfin).
+2. **If using Headless mode (`.env`):** Bring your `.env` file over from the Service node and place it in your root directory. Then run:
+   ```bash
+   export BB_NODE_TYPE=appbox   # or share
+   export BB_MEDIA_SERVICE=plex # or emby, jellyfin
+   ```
+3. Become root and run the bootstrap installer:
+   ```bash
+   su -
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
+   ```
 4. **If using Interactive mode:** Run `cd /srv/git/blackbeard && bb setup`. Choose `appbox` (or share) as the Node Type, and select your target media service. **Make sure you copy the exact same credentials you manually entered onto the Service node into this node's `accounts.yml`.**
 5. Deploy the stack: `bb install node`
 6. The media node will mount the Ceph `/media` array strictly as **Read-Only** to protect your library, dynamically request an ingress certificate from Cloudflare, and spin up the designated streaming container.
