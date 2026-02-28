@@ -1,0 +1,87 @@
+---
+# roles/zsh_env/tasks/main.yml
+# Deploy and configure Zsh, Oh-My-Zsh, and Powerlevel10k for root and the admin user.
+
+- name: Install Zsh and prerequisites (Archlinux)
+  community.general.pacman:
+    name: [zsh, git, curl, wget, autojump, fzf]
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+- name: Install Zsh and prerequisites (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: [zsh, git, curl, wget, autojump, fzf]
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Define target users for Zsh shell
+  ansible.builtin.set_fact:
+    zsh_users:
+      - name: "root"
+        home: "/root"
+      - name: "{{ admin_user }}"
+        home: "/home/{{ admin_user }}"
+
+- name: Clone Oh-My-Zsh repository
+  ansible.builtin.git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: "{{ item.home }}/.oh-my-zsh"
+    depth: 1
+    update: true
+  loop: "{{ zsh_users }}"
+  become: true
+  become_user: "{{ item.name }}"
+
+- name: Clone Powerlevel10k theme
+  ansible.builtin.git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: "{{ item.home }}/.oh-my-zsh/custom/themes/powerlevel10k"
+    depth: 1
+    update: true
+  loop: "{{ zsh_users }}"
+  become: true
+  become_user: "{{ item.name }}"
+
+- name: Clone zsh-autosuggestions plugin
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+    dest: "{{ item.home }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+    depth: 1
+    update: true
+  loop: "{{ zsh_users }}"
+  become: true
+  become_user: "{{ item.name }}"
+
+- name: Clone zsh-syntax-highlighting plugin
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+    dest: "{{ item.home }}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+    depth: 1
+    update: true
+  loop: "{{ zsh_users }}"
+  become: true
+  become_user: "{{ item.name }}"
+
+- name: Deploy .zshrc configuration
+  ansible.builtin.template:
+    src: "zshrc.j2"
+    dest: "{{ item.home }}/.zshrc"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0644"
+  loop: "{{ zsh_users }}"
+
+- name: Deploy .p10k.zsh telemetry/status template
+  ansible.builtin.copy:
+    src: "p10k.zsh"
+    dest: "{{ item.home }}/.p10k.zsh"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0644"
+  loop: "{{ zsh_users }}"
+
+- name: Change user default shell to Zsh
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: /usr/bin/zsh
+  loop: "{{ zsh_users }}"

@@ -121,6 +121,9 @@
     - role: packages
       tags: ['packages']
 
+    - role: zsh_env
+      tags: ['zsh', 'core']
+
     - role: ssh_hardening
       tags: ['ssh']
 
