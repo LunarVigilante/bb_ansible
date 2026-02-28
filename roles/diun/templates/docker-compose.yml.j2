@@ -21,7 +21,7 @@ services:
     labels:
       - "autoheal=true"
       - "traefik.enable=true"
-      - "traefik.http.routers.dockwatch.rule=Host(`dockwatch.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.dockwatch.rule=Host(`dockwatch-{{ node_name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.dockwatch.entrypoints=websecure"
       - "traefik.http.routers.dockwatch.tls=true"
       - "traefik.http.routers.dockwatch.tls.certresolver=letsEncrypt"
