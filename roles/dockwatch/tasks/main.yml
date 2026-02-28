@@ -1,8 +1,8 @@
 ---
-# roles/diun/tasks/main.yml
+# roles/dockwatch/tasks/main.yml
 # Dockwatch — Docker Container Update Management & Notifications
 #
-# Replaces Diun — provides a beautiful web UI for:
+# Provides a beautiful web UI for:
 # - Monitoring containers for image updates
 # - Per-container update scheduling (cron)
 # - Auto-update, ignore, or check-only modes
