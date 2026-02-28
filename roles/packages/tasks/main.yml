@@ -45,10 +45,17 @@
         dest: /tmp/yay-bin
         version: master
 
-    - name: Build and install yay
+    - name: Build yay package
       ansible.builtin.command:
-        cmd: makepkg -si --noconfirm
+        cmd: makepkg -s --noconfirm
         chdir: /tmp/yay-bin
+      changed_when: true
+
+    - name: Install built yay package
+      ansible.builtin.shell:
+        cmd: pacman -U --noconfirm /tmp/yay-bin/*.pkg.tar.zst
+      become: true
+      become_user: root
       changed_when: true
 
     - name: Clean up yay build directory
