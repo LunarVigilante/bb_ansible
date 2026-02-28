@@ -25,7 +25,7 @@ services:
       - "{{ instance.port }}:{{ instance.port }}/udp"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ node_name }}.{{ instance.name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
       - "traefik.http.routers.{{ instance.name }}.tls=true"
       - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
@@ -54,7 +54,7 @@ services:
 {% endif %}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ node_name }}.{{ instance.name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
       - "traefik.http.routers.{{ instance.name }}.tls=true"
       - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
@@ -82,7 +82,7 @@ services:
 {% endif %}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ node_name }}.{{ instance.name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
       - "traefik.http.routers.{{ instance.name }}.tls=true"
       - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
@@ -108,7 +108,7 @@ services:
 {% endif %}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ node_name }}.{{ instance.name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
       - "traefik.http.routers.{{ instance.name }}.tls=true"
       - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
@@ -134,7 +134,7 @@ services:
 {% endif %}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ node_name }}.{{ instance.name }}.{{ traefik_domains[0].main }}`)"
       - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
       - "traefik.http.routers.{{ instance.name }}.tls=true"
       - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"

@@ -22,9 +22,9 @@ services:
       - "autoheal=true"
       - "traefik.enable=true"
 {% if node_type == 'service' %}
-      - "traefik.http.routers.dockwatch.rule=Host(`dockwatch.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.dockwatch.rule=Host(`dockwatch.{{ traefik_domains[0].main }}`) || Host(`{{ node_name }}.dockwatch.{{ traefik_domains[0].main }}`)"
 {% else %}
-      - "traefik.http.routers.dockwatch.rule=Host(`dockwatch-{{ node_name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.dockwatch.rule=Host(`{{ node_name }}.dockwatch.{{ traefik_domains[0].main }}`)"
 {% endif %}
       - "traefik.http.routers.dockwatch.entrypoints=websecure"
       - "traefik.http.routers.dockwatch.tls=true"
