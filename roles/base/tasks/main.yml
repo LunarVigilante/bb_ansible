@@ -28,13 +28,13 @@
     line: "en_US.UTF-8 UTF-8"
     state: present
   register: locale_gen_result
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Generate locales (Arch)
   ansible.builtin.command: locale-gen
   changed_when: locale_gen_result.changed
   when:
-    - ansible_os_family == "Archlinux"
+    - ansible_facts['os_family'] == "Archlinux"
     - locale_gen_result.changed
 
 - name: Set system locale
@@ -50,7 +50,7 @@
 - name: Generate locale (Ubuntu)
   ansible.builtin.command: locale-gen en_US.UTF-8
   changed_when: false
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 # ═══ Time ═══
 
@@ -68,13 +68,13 @@
   community.general.pacman:
     name: sudo
     state: present
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Install sudo (Ubuntu)
   ansible.builtin.apt:
     name: sudo
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 # ═══ Dotfiles ═══
 

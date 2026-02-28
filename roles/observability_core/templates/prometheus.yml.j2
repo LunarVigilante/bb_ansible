@@ -13,8 +13,8 @@ scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
 {% for host in groups['all'] %}
-{% if hostvars[host]['ansible_default_ipv4'] is defined %}
-      - targets: ['{{ hostvars[host]['ansible_default_ipv4']['address'] }}:9100']
+{% if hostvars[host]['ansible_facts']['default_ipv4'] is defined %}
+      - targets: ['{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:9100']
         labels:
           node: '{{ hostvars[host]['node_name'] | default(host) }}'
 {% endif %}
@@ -24,8 +24,8 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
 {% for host in groups['all'] %}
-{% if hostvars[host]['ansible_default_ipv4'] is defined %}
-      - targets: ['{{ hostvars[host]['ansible_default_ipv4']['address'] }}:8080']
+{% if hostvars[host]['ansible_facts']['default_ipv4'] is defined %}
+      - targets: ['{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:8080']
         labels:
           node: '{{ hostvars[host]['node_name'] | default(host) }}'
 {% endif %}

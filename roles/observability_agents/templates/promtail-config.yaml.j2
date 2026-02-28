@@ -7,7 +7,7 @@ positions:
 
 clients:
   # Push logs to the centralized Loki instance on svc-01 using its internal IP
-  - url: http://{{ hostvars['svc-01']['ansible_default_ipv4']['address'] }}:3100/loki/api/v1/push
+  - url: http://{{ hostvars['svc-01']['ansible_facts']['default_ipv4']['address'] }}:3100/loki/api/v1/push
 
 scrape_configs:
   # --- System Logs ---

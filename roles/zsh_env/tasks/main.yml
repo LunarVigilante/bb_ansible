@@ -6,13 +6,13 @@
   community.general.pacman:
     name: [zsh, git, curl, wget, autojump, fzf]
     state: present
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Install Zsh and prerequisites (Debian/Ubuntu)
   ansible.builtin.apt:
     name: [zsh, git, curl, wget, autojump, fzf]
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 - name: Define target users for Zsh shell
   ansible.builtin.set_fact:

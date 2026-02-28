@@ -6,13 +6,13 @@
   community.general.pacman:
     name: fail2ban
     state: present
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Install fail2ban (Ubuntu)
   ansible.builtin.apt:
     name: fail2ban
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 - name: Deploy SSH login banner
   ansible.builtin.template:

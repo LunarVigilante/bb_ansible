@@ -10,7 +10,7 @@
       - docker
       - docker-compose
     state: present
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 # Pin Docker version on Arch (prevent pacman -Syu from upgrading past target)
 - name: Pin Docker version in pacman.conf (Arch)
@@ -20,20 +20,20 @@
     line: "IgnorePkg = docker docker-compose"
     insertafter: '^\[options\]'
     state: present
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 # Ubuntu: install from official Docker repo for version control
 - name: Add Docker GPG key (Ubuntu)
   ansible.builtin.apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 - name: Add Docker APT repo (Ubuntu)
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 - name: Install Docker (Ubuntu) {{ docker_version }}
   ansible.builtin.apt:
@@ -44,7 +44,7 @@
       - containerd.io
     state: present
     update_cache: true
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 # Hold Docker at pinned version (prevent apt upgrade)
 - name: Hold Docker version (Ubuntu)
@@ -54,7 +54,7 @@
   loop:
     - docker-ce
     - docker-ce-cli
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 # --- QoS & Docker daemon config ---
 

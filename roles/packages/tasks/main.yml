@@ -8,7 +8,7 @@
     state: present
     update_cache: true
     upgrade: true
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Update system and install packages (Ubuntu)
   ansible.builtin.apt:
@@ -16,7 +16,7 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
 # --- Yay (AUR helper) — Arch only ---
 
@@ -25,11 +25,11 @@
   register: yay_check
   changed_when: false
   failed_when: false
-  when: ansible_os_family == "Archlinux"
+  when: ansible_facts['os_family'] == "Archlinux"
 
 - name: Install yay from AUR
   when:
-    - ansible_os_family == "Archlinux"
+    - ansible_facts['os_family'] == "Archlinux"
     - yay_check is defined
     - yay_check.rc != 0
   become: true
@@ -61,6 +61,6 @@
   register: yay_result
   changed_when: "'installing' in yay_result.stdout or 'upgrading' in yay_result.stdout"
   when:
-    - ansible_os_family == "Archlinux"
+    - ansible_facts['os_family'] == "Archlinux"
     - yay_check is defined
     - yay_check.rc is defined
