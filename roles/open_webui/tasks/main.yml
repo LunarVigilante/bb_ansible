@@ -1,0 +1,45 @@
+---
+# roles/open_webui/tasks/main.yml
+# Deploy the Open WebUI AI stack with Qdrant and Postgres backends
+
+- name: Create Open WebUI appdata directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/appdata/open_webui
+    - /opt/appdata/open_webui/data
+    - /opt/appdata/open_webui/mcpo
+    - /opt/appdata/open_webui/cache
+    - /opt/appdata/open_webui/cache/uv
+    - /opt/appdata/open_webui/pipelines
+    - /opt/appdata/open_webui/database
+    - /opt/appdata/open_webui/redis
+    - /opt/appdata/open_webui/qdrant
+    - /opt/compose/open_webui
+
+- name: Create empty Open WebUI mcpo config (prevent docker dir creation)
+  ansible.builtin.copy:
+    content: "{}"
+    dest: /opt/appdata/open_webui/mcpo/config.json
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+
+- name: Deploy Open WebUI Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/open_webui/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Open WebUI stack
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/open_webui
+  changed_when: true

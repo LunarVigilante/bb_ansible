@@ -1,0 +1,83 @@
+# Autopulse Configuration — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+# Docs: https://autopulse.dancodes.online/
+
+app:
+  hostname: "0.0.0.0"
+  port: 2875
+  database_url: "sqlite:///config/autopulse.db"
+
+auth:
+  username: "{{ node_name }}"
+  password: "{{ autopulse_password }}"
+
+opts:
+  check_path: true
+  max_retries: 5
+
+# --- Triggers (what sends notifications to autopulse) ---
+triggers:
+{% if autopulse_triggers | default({}) | length > 0 %}
+{% for name, trigger in autopulse_triggers.items() %}
+  {{ name }}:
+    type: "{{ trigger.type }}"
+{% if trigger.rewrite is defined %}
+    rewrite:
+      from: "{{ trigger.rewrite.from }}"
+      to: "{{ trigger.rewrite.to }}"
+{% endif %}
+{% if trigger.paths is defined %}
+    paths:
+{% for path in trigger.paths %}
+      - "{{ path }}"
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% else %}
+  # No triggers configured yet — add them to autopulse_triggers in settings.yml
+  # Example:
+  #   autopulse_triggers:
+  #     sonarr:
+  #       type: sonarr
+  #       rewrite:
+  #         from: /downloads/tv
+  #         to: /mnt/ceph/media/tv
+  manual:
+    type: "manual"
+{% endif %}
+
+# --- Targets (media servers to update) ---
+targets:
+{% if autopulse_targets | default({}) | length > 0 %}
+{% for name, target in autopulse_targets.items() %}
+  {{ name }}:
+    type: "{{ target.type }}"
+    url: "{{ target.url }}"
+{% if target.token is defined %}
+    token: "{{ target.token }}"
+{% endif %}
+{% if target.rewrite is defined %}
+    rewrite:
+      from: "{{ target.rewrite.from }}"
+      to: "{{ target.rewrite.to }}"
+{% endif %}
+{% endfor %}
+{% else %}
+  # No targets configured yet — add them to autopulse_targets in settings.yml
+  # Example:
+  #   autopulse_targets:
+  #     plex:
+  #       type: plex
+  #       url: http://plex:32400
+  #       token: your-plex-token
+{% endif %}
+
+# --- Webhooks (optional notifications) ---
+{% if autopulse_webhooks | default({}) | length > 0 %}
+webhooks:
+{% for name, webhook in autopulse_webhooks.items() %}
+  {{ name }}:
+    type: "{{ webhook.type }}"
+    url: "{{ webhook.url }}"
+{% endfor %}
+{% endif %}

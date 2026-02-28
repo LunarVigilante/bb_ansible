@@ -1,0 +1,17 @@
+# Cluster definition for Service Node 01 (svc-01)
+# ---------------------------------------------------------------------------
+# Purpose: Dashboards, SSO, Utilities, and Personal Cloud
+# Automatically triggers single-stack app_services
+# ---------------------------------------------------------------------------
+
+enable_nextcloud: true
+enable_vaultwarden: true
+enable_audiobookshelf: true
+enable_homepage: true
+enable_uptime_kuma: true
+enable_speedtest: true
+enable_kavita: true
+enable_tracearr: true
+
+notifiarr_instances:
+  - name: notifiarr

@@ -1,0 +1,55 @@
+---
+# roles/ssh_hardening/tasks/main.yml
+# Harden SSH and configure fail2ban
+
+- name: Install fail2ban (Arch)
+  community.general.pacman:
+    name: fail2ban
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+- name: Install fail2ban (Ubuntu)
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Deploy SSH login banner
+  ansible.builtin.template:
+    src: banner.j2
+    dest: /etc/ssh/banner
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy SSH hardening config
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart sshd
+
+- name: Ensure sshd_config.d is included
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "Include /etc/ssh/sshd_config.d/*.conf"
+    insertbefore: BOF
+    state: present
+  notify: Restart sshd
+
+- name: Deploy fail2ban jail.local
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started

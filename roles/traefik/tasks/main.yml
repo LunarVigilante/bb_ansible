@@ -1,0 +1,77 @@
+---
+# roles/traefik/tasks/main.yml
+# Deploy Traefik reverse proxy via Docker Compose
+# Certs handled automatically by Traefik's built-in ACME (Cloudflare DNS-01)
+
+- name: Create Traefik directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/traefik
+    - /opt/traefik/log
+
+- name: Ensure acme.json exists with strict permissions
+  ansible.builtin.file:
+    path: /opt/traefik/acme.json
+    state: touch
+    owner: root
+    group: root
+    mode: "0600"
+  changed_when: false
+
+- name: Copy dynamic.yml from Ceph (if available)
+  ansible.builtin.copy:
+    src: /mnt/ceph/data/letsencrypt/dynamic.yml
+    dest: /opt/traefik/dynamic.yml
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  failed_when: false
+  changed_when: false
+
+- name: Ensure dynamic.yml exists (fallback)
+  ansible.builtin.copy:
+    content: |
+      # Traefik Dynamic Configuration
+      # Add your routers, services, and middleware here
+      http: {}
+    dest: /opt/traefik/dynamic.yml
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+
+- name: Deploy CrowdSec Bouncer dynamic config
+  ansible.builtin.template:
+    src: crowdsec.yml.j2
+    dest: /opt/traefik/crowdsec.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Authentik ForwardAuth dynamic config
+  ansible.builtin.template:
+    src: authentik.yml.j2
+    dest: /opt/traefik/authentik.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Traefik Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/traefik/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Traefik
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: /opt/traefik
+  changed_when: true

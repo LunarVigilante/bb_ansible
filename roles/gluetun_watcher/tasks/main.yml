@@ -1,0 +1,26 @@
+---
+# roles/gluetun_watcher/tasks/main.yml
+# Deploy the background daemon that monitors Gluetun containers and restarts dependent Plex instances
+
+- name: Deploy Gluetun watcher bash script
+  ansible.builtin.template:
+    src: gluetun-watcher.sh.j2
+    dest: /usr/local/bin/gluetun-watcher.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy Gluetun watcher systemd service
+  ansible.builtin.template:
+    src: gluetun-watcher.service.j2
+    dest: /etc/systemd/system/gluetun-watcher.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start Gluetun watcher daemon
+  ansible.builtin.systemd:
+    name: gluetun-watcher.service
+    enabled: true
+    state: started
+    daemon_reload: true

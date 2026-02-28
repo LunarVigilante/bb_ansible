@@ -1,0 +1,35 @@
+---
+# roles/ethtool_buffer/tasks/main.yml
+# Deploy ethtool ring buffer adjustment script and systemd service (10Gbps nodes only)
+
+- name: Ensure /opt/scripts directory exists
+  ansible.builtin.file:
+    path: /opt/scripts
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy ethtool buffer script
+  ansible.builtin.template:
+    src: ethtool_buffer.sh.j2
+    dest: /opt/scripts/ethtool_buffer.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy ethtool buffer systemd service
+  ansible.builtin.template:
+    src: ethtool_buffer.service.j2
+    dest: /etc/systemd/system/ethtool_buffer.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd daemon
+
+- name: Enable and start ethtool buffer service
+  ansible.builtin.systemd:
+    name: ethtool_buffer.service
+    enabled: true
+    state: started
+    daemon_reload: true

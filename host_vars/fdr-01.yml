@@ -1,0 +1,54 @@
+# Cluster definition for Feeder Node 01 (fdr-01)
+# ---------------------------------------------------------------------------
+# Purpose: BitTorrent/Usenet traffic, unpacking, and high-speed seeding
+# Heavy Disk I/O & Network Node
+# ---------------------------------------------------------------------------
+
+qbittorrent_instances:
+  - name: qbittorrent-remux-01
+    port: 56889
+  - name: qbittorrent-misc-01
+    port: 56888
+  - name: qbittorrent-tv-4k-01
+    port: 56887
+  - name: qbittorrent-movies-4k-01
+    port: 56886
+  - name: qbittorrent-anime-01
+    port: 56885
+  - name: qbittorrent-tv-02
+    port: 56884
+  - name: qbittorrent-tv-01
+    port: 56883
+  - name: qbittorrent-movies-01
+    port: 56882
+  - name: qbittorrent-local
+    port: 56881
+
+sabnzbd_instances:
+  - name: sabnzbd
+
+cross_seed_instances:
+  - name: cross-seed-tv-02
+  - name: cross-seed-tv-01
+  - name: cross-seed-movies-01
+  - name: cross-seed-anime-01
+  - name: cross-seed-misc-01
+  - name: cross-seed-movies-4k-01
+  - name: cross-seed-tv-4k-01
+  - name: cross-seed-remux-01
+
+autobrr_instances:
+  - name: autobrr
+  - name: qui
+
+omegabrr_instances:
+  - name: omegabrr
+
+qbit_manage_instances:
+  - name: qbit-manage
+
+unpackerr_instances:
+  - name: unpackerr
+
+scrutiny_instances:
+  - name: scrutiny

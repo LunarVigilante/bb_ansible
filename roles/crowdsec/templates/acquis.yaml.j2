@@ -1,0 +1,17 @@
+---
+# CrowdSec log acquisition config
+# Tells CrowdSec which logs to watch for threat detection
+
+# Traefik access logs (primary — web-layer attacks)
+filenames:
+  - /var/log/traefik/*.log
+labels:
+  type: traefik
+
+---
+# SSH auth logs (supplements fail2ban)
+filenames:
+  - /var/log/auth.log
+  - /var/log/secure
+labels:
+  type: syslog

@@ -1,0 +1,31 @@
+---
+# roles/tcp_tuning/tasks/main.yml
+# Deploy sysctl tuning optimized for Ceph + media streaming
+
+- name: Deploy TCP/network tuning sysctl config
+  ansible.builtin.template:
+    src: sysctl-media.conf.j2
+    dest: /etc/sysctl.d/80-blackbeard-media.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Apply sysctl settings
+
+- name: Remove legacy sysctl config (if present)
+  ansible.builtin.file:
+    path: /etc/sysctl.d/80-mixed-cdn.conf
+    state: absent
+  notify: Apply sysctl settings
+
+- name: Set file descriptor limits for media services
+  ansible.builtin.copy:
+    content: |
+      # Blackbeard Media — raised limits for streaming + Ceph
+      *    soft    nofile    1048576
+      *    hard    nofile    1048576
+      root soft    nofile    1048576
+      root hard    nofile    1048576
+    dest: /etc/security/limits.d/99-blackbeard.conf
+    owner: root
+    group: root
+    mode: "0644"

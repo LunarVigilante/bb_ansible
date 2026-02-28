@@ -1,0 +1,121 @@
+---
+# roles/beszel/tasks/main.yml
+# Beszel — Lightweight server monitoring agent via Docker Compose
+#
+# Beszel agent runs on each node and reports to a central Beszel hub.
+# Tracks CPU, RAM, disk, network, Docker containers, GPU — 8MB RAM footprint.
+# The hub is deployed separately (on your monitoring server).
+
+- name: Skip Beszel (no hub key configured)
+  ansible.builtin.debug:
+    msg: "Beszel skipped — set beszel_hub_key in accounts.yml to enable."
+  when: beszel_hub_key | default('') | length == 0
+
+- name: Create Beszel directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/beszel
+    - /opt/beszel/data
+  when: beszel_hub_key | default('') | length > 0
+
+# --- Device Detection ---
+# Auto-detect GPU and NVMe devices for hardware monitoring
+
+- name: Detect GPU devices
+  ansible.builtin.find:
+    paths: /dev/dri
+    file_type: any
+    patterns: "card*,renderD*"
+  register: gpu_devices
+  when: beszel_hub_key | default('') | length > 0
+  failed_when: false
+
+- name: Detect NVMe devices
+  ansible.builtin.find:
+    paths: /dev
+    file_type: any
+    patterns: "nvme*"
+    recurse: false
+  register: nvme_devices
+  when: beszel_hub_key | default('') | length > 0
+  failed_when: false
+
+- name: Build device list
+  ansible.builtin.set_fact:
+    beszel_detected_devices: >-
+      {{
+        (gpu_devices.files | default([]) | map(attribute='path') | list) +
+        (nvme_devices.files | default([]) | map(attribute='path') | list)
+      }}
+  when: beszel_hub_key | default('') | length > 0
+
+- name: Log detected devices
+  ansible.builtin.debug:
+    msg: "Beszel will monitor devices: {{ beszel_detected_devices | default([]) | join(', ') | default('none detected') }}"
+  when: beszel_hub_key | default('') | length > 0
+
+# --- Storage Monitoring ---
+# Create .beszel marker dirs on monitored mounts so Beszel tracks them
+
+- name: Create Ceph Beszel marker directory
+  ansible.builtin.file:
+    path: /mnt/ceph/.beszel
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - beszel_hub_key | default('') | length > 0
+    - ansible_facts['mounts'] | selectattr('mount', 'match', '/mnt/ceph') | list | length > 0
+  failed_when: false
+
+- name: Create Beszel marker on additional mounts
+  ansible.builtin.file:
+    path: "{{ item.mount }}/.beszel"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ ansible_facts['mounts'] | selectattr('mount', 'match', '^/mnt/') | rejectattr('mount', 'equalto', '/mnt/ceph') | list }}"
+  when: beszel_hub_key | default('') | length > 0
+  failed_when: false
+
+# --- Deploy ---
+
+- name: Deploy Beszel Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/beszel/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+  when: beszel_hub_key | default('') | length > 0
+
+- name: Start Beszel agent
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: /opt/beszel
+  changed_when: true
+  when: beszel_hub_key | default('') | length > 0
+
+- name: Display Beszel setup info
+  ansible.builtin.debug:
+    msg: |
+      ┌──────────────────────────────────────────────────────────┐
+      │  Beszel Agent deployed on port {{ beszel_agent_port }}   │
+      │                                                          │
+      │  To connect from your Beszel Hub:                        │
+      │    1. Open your Beszel Hub web UI                        │
+      │    2. Add System → {{ node_name }}                       │
+      │    3. Host: {{ node_ip }}                                │
+      │    4. Port: {{ beszel_agent_port }}                      │
+      │                                                          │
+      │  Devices: {{ beszel_detected_devices | default([]) | length }} detected            │
+      │  Storage: Ceph + {{ ansible_facts['mounts'] | selectattr('mount', 'match', '^/mnt/') | list | length }} additional mounts monitored │
+      └──────────────────────────────────────────────────────────┘
+  when: beszel_hub_key | default('') | length > 0

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Blackbeard AppData Backup Script
+# Automatically stops containers, zips configuration directories, and pushes 
+# to isolated Ceph backup filesystems
+# =============================================================================
+
+# Define the target destination based on node type.
+# Edge nodes (appbox/share) have their isolated tenant folder mounted directly to /mnt/ceph-bbfs.
+# Core nodes (fdr/svc) mount the root of /blackbeard/, so they should write to their named subfolder.
+{% if node_type in ['share', 'appbox'] %}
+BACKUP_DEST="/mnt/ceph-bbfs"
+{% else %}
+BACKUP_DEST="/mnt/ceph-bbfs/{{ node_name }}"
+{% endif %}
+
+mkdir -p "$BACKUP_DEST"
+
+# 1. Gracefully stop all running containers to prevent SQLite corruption
+echo "Stopping all running Docker containers..."
+RUNNING_CONTAINERS=$(docker ps -q)
+if [ -n "$RUNNING_CONTAINERS" ]; then
+    docker stop $RUNNING_CONTAINERS
+fi
+
+# 2. Backup isolated user configs
+# Matches the custom isolated structure: /opt/*docker/*config/user*/
+echo "Scanning for isolated user config directories..."
+# Check if glob resolves to anything before executing to prevent script errors
+shopt -s nullglob
+for USER_DIR in /opt/*docker/*config/user*/; do
+    if [ -d "$USER_DIR" ]; then
+        # Strip trailing slash
+        DIR_PATH="${USER_DIR%/}"
+        
+        # Create a safe archive name (e.g., opt_plex-docker_plex-config_user1_20240101.tar.zst)
+        SAFE_NAME=$(echo "$DIR_PATH" | sed 's|^/||' | tr '/' '_')
+        ARCHIVE_NAME="${SAFE_NAME}_$(date +%Y%m%d).tar.zst"
+        
+        echo "Compressing ${DIR_PATH} to ${ARCHIVE_NAME}..."
+        tar --zstd -cpf "${BACKUP_DEST}/${ARCHIVE_NAME}" -C "$(dirname "$DIR_PATH")" "$(basename "$DIR_PATH")"
+    fi
+done
+shopt -u nullglob
+
+# 3. Restart Docker daemon to bring containers back online according to their restart policies
+echo "Restarting Docker daemon to revive containers..."
+systemctl restart docker
+
+# 4. Prune old backups (Keep 14 days)
+echo "Cleaning up outdated backups..."
+find "$BACKUP_DEST" -type f -name "*.tar.zst" -mtime +14 -delete
+
+echo "Backup fully completed and stored on CephFS."

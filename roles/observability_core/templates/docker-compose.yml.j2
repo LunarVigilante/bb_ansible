@@ -1,0 +1,78 @@
+# Core Observability Hub (PLG Stack)
+# Node: {{ node_name }}
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Enable Authentik proxy auth if needed, but we'll use ForwardAuth anyway
+    volumes:
+      - /opt/appdata/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /opt/appdata/grafana:/var/lib/grafana
+    networks:
+      - proxy
+      - observability-internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=letsEncrypt"
+      # Secure via SSO
+      - "traefik.http.routers.grafana.middlewares=authentik@file"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - /opt/appdata/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - /opt/appdata/loki:/loki
+    networks:
+      - observability-internal
+    ports:
+      # Pushing internal 3100 out so Promtail agents on other nodes can reach it via internal IP
+      - "3100:3100"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      # Allow lifecycle admin so we can trigger config reloads via API
+      - '--web.enable-lifecycle'
+    volumes:
+      - /opt/appdata/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /opt/appdata/prometheus:/prometheus
+    networks:
+      - proxy
+      - observability-internal
+    labels:
+      # We don't necessarily want Prom public, but if needed, protect it with Authentik
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prom.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.prometheus.middlewares=authentik@file"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+networks:
+  proxy:
+    external: true
+  observability-internal:
+    internal: false

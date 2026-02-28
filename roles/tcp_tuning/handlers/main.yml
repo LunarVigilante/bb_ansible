@@ -1,0 +1,6 @@
+---
+# roles/tcp_tuning/handlers/main.yml
+
+- name: Apply sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: true

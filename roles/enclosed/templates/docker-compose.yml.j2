@@ -1,0 +1,31 @@
+# Enclosed Secure Sharing — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+  enclosed:
+    container_name: enclosed
+    image: corentinth/enclosed:latest
+    hostname: enclosed
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.enclosed.entrypoints=websecure"
+      - "traefik.http.routers.enclosed.rule=Host(`bin.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.enclosed.tls=true"
+      - "traefik.http.routers.enclosed.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.enclosed.loadbalancer.server.port=8787"
+      - "traefik.http.routers.enclosed.middlewares=crowdsec-bouncer@docker"
+    volumes:
+      - /opt/appdata/enclosed/storage:/public/storage
+      - /etc/localtime:/etc/localtime:ro
+
+networks:
+  proxy:
+    external: true

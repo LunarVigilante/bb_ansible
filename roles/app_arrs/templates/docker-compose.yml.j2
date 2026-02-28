@@ -1,0 +1,297 @@
+# Arr Ecosystem — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+
+# === SONARR INSTANCES ===
+{% for instance in sonarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/sonarr:release
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8989"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8989"
+      # Opt-out of SSO for API webhook endpoints if needed, but normally Arrs have built-in auth
+{% endfor %}
+
+# === RADARR INSTANCES ===
+{% for instance in radarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/radarr:release
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:7878"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=7878"
+{% endfor %}
+
+# === READARR INSTANCES ===
+{% for instance in readarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/readarr:nightly
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8787"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8787"
+{% endfor %}
+
+# === LIDARR INSTANCES ===
+{% for instance in lidarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/lidarr:release
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8686"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8686"
+{% endfor %}
+
+# === BAZARR INSTANCES ===
+{% for instance in bazarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/bazarr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:6767"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=6767"
+{% endfor %}
+
+# === PROWLARR INSTANCES ===
+{% for instance in prowlarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/prowlarr:release
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:9696"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=9696"
+{% endfor %}
+
+# === MYLAR INSTANCES ===
+{% for instance in mylar_instances | default([]) %}
+  {{ instance.name }}:
+    image: lscr.io/linuxserver/mylar3:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8090"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8090"
+{% endfor %}
+
+# === SEERR INSTANCES ===
+{% for instance in seerr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/seerr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:5055"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.{{ instance.name }}.middlewares=authentik@file"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=5055"
+{% endfor %}
+
+# === HUNTARR INSTANCES ===
+{% for instance in huntarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: plexguide/huntarr:8.2.10
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8080"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8080"
+{% endfor %}
+
+# === DOPLARR INSTANCES ===
+{% for instance in doplarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/doplarr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% endfor %}
+
+# === FLARESOLVERR INSTANCES ===
+{% for instance in flaresolverr_instances | default([]) %}
+  {{ instance.name }}:
+    image: flaresolverr/flaresolverr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+      - LOG_LEVEL=info
+    networks:
+      - proxy
+{% endfor %}
+
+networks:
+  proxy:
+    external: true

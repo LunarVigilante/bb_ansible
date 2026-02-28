@@ -1,0 +1,9 @@
+[Unit]
+Description=Emby Deployment Copy Service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo cp /mnt/ceph/emby/datastage/emby-master-template/deployment.tar.gz /opt/embydocker/deployment.tar.gz'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+---
+# =============================================================================
+# Blackbeard Media — Node Settings
+# =============================================================================
+# Configure this node's identity and capabilities.
+# This file is gitignored — never commit it.
+#
+# Copy from template:  cp settings.yml.default settings.yml
+# Edit:                nano settings.yml
+# =============================================================================
+
+# --- Node Identity ---
+# Name for this node (e.g. e-ab-sm-01, p-sh-02)
+node_name: ""
+
+# Media service: emby, plex, or jellyfin
+media_service: "emby"
+
+# Node type: share, appbox, or baremetal
+node_type: "appbox"
+
+# --- Hardware ---
+# Is this a 10Gbps node? (true/false)
+is_10g_node: false
+
+# Secondary drive device path (e.g. /dev/nvme1n1)
+# Set to "none" if this server has a single drive.
+secondary_drive: "none"
+
+# --- Emby Settings ---
+# Emby tier (only applies when media_service: emby)
+#   appbox  — full library + plugins
+#   basic   — light library
+#   skip    — not applicable
+emby_tier: "skip"

@@ -1,0 +1,44 @@
+# Autopulse — Managed by Blackbeard Ansible
+# Node: {{ node_name }} (Share nodes only)
+# Replaces autoscan — sends targeted update requests to media servers
+
+services:
+  autopulse:
+    image: ghcr.io/dan-online/autopulse:{{ autopulse_version }}
+    container_name: autopulse
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    networks:
+{% for net in docker_networks %}
+      - {{ net.name }}
+{% endfor %}
+    environment:
+      TZ: {{ timezone }}
+      PUID: "1000"
+      PGID: "1000"
+      AUTOPULSE__APP__DATABASE_URL: "sqlite:///config/autopulse.db"
+    ports:
+      - "{{ autopulse_port }}:2875/tcp"
+    volumes:
+      - /opt/autopulse:/config
+      - /opt/autopulse/config.yml:/app/config.yaml:ro
+      - /mnt/ceph:/mnt/ceph:ro
+    labels:
+      - "autoheal=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.autopulse.rule=Host(`autopulse.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.autopulse.entrypoints=websecure"
+      - "traefik.http.routers.autopulse.tls=true"
+      - "traefik.http.routers.autopulse.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.autopulse.loadbalancer.server.port=2875"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:2875/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+{% for net in docker_networks %}
+  {{ net.name }}:
+    external: true
+{% endfor %}

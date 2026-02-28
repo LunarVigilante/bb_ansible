@@ -1,0 +1,179 @@
+---
+# roles/finishing/tasks/main.yml
+# Auth files, required folders, deployment archives, and systemd update timers
+
+# --- Authentication Files ---
+
+- name: Create auth directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - /opt/auth
+    - /opt/auth/cf-dns
+    - /opt/auth/cdn
+
+- name: Deploy Cloudflare DNS auth file
+  ansible.builtin.template:
+    src: cf-dns-auth.json.j2
+    dest: /opt/auth/cf-dns/auth.json
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Deploy CDN env file
+  ansible.builtin.template:
+    src: cdn-env.j2
+    dest: /opt/auth/cdn/.env
+    owner: root
+    group: root
+    mode: "0600"
+
+# --- Required Folders ---
+
+- name: Create Plex directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/plexdocker
+    - /opt/plexdocker/plexconfigs
+    - /deployments
+    - /mnt/local
+    - /mnt/local/meta
+    - /opt/scripts
+    - /opt/scripts/plexmediaserver
+  when: is_plex | bool
+
+- name: Create Emby directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/embydocker
+    - /opt/embydocker/embyconfigs
+    - /opt/embydocker/staging
+    - /deployments
+  when: is_emby | bool
+
+# --- Copy deployment.tar.gz ---
+
+- name: Copy Plex deployment archive
+  ansible.builtin.copy:
+    src: /mnt/ceph/plex/deployment.tar.gz
+    dest: /opt/plexdocker/deployment.tar.gz
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_plex | bool
+
+- name: Copy Emby deployment archive
+  ansible.builtin.copy:
+    src: /mnt/ceph/emby/datastage/emby-master-template/deployment.tar.gz
+    dest: /opt/embydocker/deployment.tar.gz
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_emby | bool
+
+# --- Copy PSQL Data (Plex only) ---
+
+- name: Copy Plex SQLite data from Ceph
+  ansible.builtin.command: cp -R /mnt/ceph/plex/plexmediaserver/ /opt/scripts/plexmediaserver/
+  args:
+    creates: /opt/scripts/plexmediaserver
+  when: is_plex | bool
+
+# --- Deployment update timer ---
+
+- name: Deploy deployment-update service (Plex)
+  ansible.builtin.template:
+    src: deployment-update-plex.service.j2
+    dest: /etc/systemd/system/deployment-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_plex | bool
+
+- name: Deploy deployment-update service (Emby)
+  ansible.builtin.template:
+    src: deployment-update-emby.service.j2
+    dest: /etc/systemd/system/deployment-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_emby | bool
+
+- name: Deploy deployment-update timer
+  ansible.builtin.template:
+    src: deployment-update.timer.j2
+    dest: /etc/systemd/system/deployment-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start deployment-update timer
+  ansible.builtin.systemd:
+    name: deployment-update.timer
+    enabled: true
+    state: started
+
+# --- Emby staging update timer ---
+
+- name: Deploy emby-update service (appbox tier)
+  ansible.builtin.template:
+    src: emby-update-appbox.service.j2
+    dest: /etc/systemd/system/emby-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - is_emby | bool
+    - emby_tier == 'appbox'
+
+- name: Deploy emby-update service (basic tier)
+  ansible.builtin.template:
+    src: emby-update-basic.service.j2
+    dest: /etc/systemd/system/emby-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - is_emby | bool
+    - emby_tier == 'basic'
+
+- name: Deploy emby-update timer
+  ansible.builtin.template:
+    src: emby-update.timer.j2
+    dest: /etc/systemd/system/emby-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_emby | bool
+
+- name: Reload systemd for emby timer
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: is_emby | bool
+
+- name: Enable and start emby-update timer
+  ansible.builtin.systemd:
+    name: emby-update.timer
+    enabled: true
+    state: started
+  when: is_emby | bool

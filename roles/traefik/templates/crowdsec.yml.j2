@@ -1,0 +1,13 @@
+http:
+  middlewares:
+    crowdsec-bouncer:
+      plugin:
+        crowdsec-bouncer:
+          enabled: true
+          logLevel: INFO
+          crowdsecMode: live
+          crowdsecLapiScheme: http
+          crowdsecLapiHost: crowdsec:8080
+          crowdsecLapiKey: "{{ vault_crowdsec_traefik_bouncer_key | default('CHANGE_ME_crowdsec_bouncer_key') }}"
+          updateIntervalSeconds: 60
+          forwardedHeadersCustomName: X-Forwarded-For

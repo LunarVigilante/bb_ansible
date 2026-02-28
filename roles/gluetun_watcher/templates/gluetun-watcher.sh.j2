@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Blackbeard Gluetun-Plex Watcher
+# Automatically restarts dependent Plex containers whenever a Gluetun 
+# VPN container restarts, preventing lost network connectivity.
+# =============================================================================
+
+echo "Starting Gluetun Watcher. Listening for container start events..."
+
+# Listen to the native Docker event stream for container starts
+docker events --filter 'event=start' --format '{{"{{"}}.Actor.Attributes.name{{"}}"}}' | while read -r container_name; do
+    # Check if the started container matches the Gluetun naming convention
+    if [[ "$container_name" == gluetun-* ]]; then
+        echo "[$(date -Iseconds)] Detected Gluetun container started: $container_name"
+        
+        # Identify any Plex (or other) containers dynamically bound to this specific Gluetun network namespace
+        # Network mode format is: container:gluetun-X-Y
+        dependent_containers=$(docker ps -a --filter "network=container:$container_name" --format '{{"{{"}}.Names{{"}}"}}')
+        
+        if [ -n "$dependent_containers" ]; then
+            for dependent in $dependent_containers; do
+                echo "[$(date -Iseconds)] Restarting dependent container: $dependent"
+                # Restart the container so it successfully re-attaches to the newly initialized Gluetun network stack
+                docker restart "$dependent"
+            done
+        else
+            echo "[$(date -Iseconds)] No dependent containers found for $container_name"
+        fi
+    fi
+done

@@ -1,0 +1,198 @@
+# Single App Services (Web utilities) — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+{% if enable_vaultwarden | default(false) | bool %}
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - WEBSOCKET_ENABLED=true
+    volumes:
+      - /opt/appdata/vaultwarden:/data/
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden.tls=true"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsEncrypt"
+      # Secure via SSO
+      - "traefik.http.routers.vaultwarden.middlewares=authentik@file"
+      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+{% endif %}
+
+{% if enable_nextcloud | default(false) | bool %}
+  nextcloud:
+    image: nextcloud:31
+    container_name: nextcloud
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/nextcloud:/var/www/html
+      - /mnt/ceph/nextcloud:/var/www/html/data
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextcloud.rule=Host(`cloud.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.tls=true"
+      - "traefik.http.routers.nextcloud.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.nextcloud.middlewares=authentik@file"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+{% endif %}
+
+{% if enable_audiobookshelf | default(false) | bool %}
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/audiobookshelf/config:/config
+      - /opt/appdata/audiobookshelf/metadata:/metadata
+      - /mnt/ceph/media/audiobooks:/audiobooks
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.audiobookshelf.rule=Host(`audio.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.audiobookshelf.entrypoints=websecure"
+      - "traefik.http.routers.audiobookshelf.tls=true"
+      - "traefik.http.routers.audiobookshelf.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.audiobookshelf.middlewares=authentik@file"
+      - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
+{% endif %}
+
+{% if enable_homepage | default(false) | bool %}
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/homepage:/app/config
+    environment:
+      - DOCKER_HOST=tcp://homepage-proxy:2375
+    depends_on:
+      - homepage-proxy
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`home.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.tls=true"
+      - "traefik.http.routers.homepage.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.homepage.middlewares=authentik@file"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+
+  homepage-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: homepage-proxy
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+{% endif %}
+
+{% if enable_uptime_kuma | default(false) | bool %}
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/uptime-kuma:/app/data
+    environment:
+      - UPTIME_KUMA_DOCKER_HOST=tcp://uptime-proxy:2375
+    depends_on:
+      - uptime-proxy
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime.rule=Host(`status.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.uptime.entrypoints=websecure"
+      - "traefik.http.routers.uptime.tls=true"
+      - "traefik.http.routers.uptime.tls.certresolver=letsEncrypt"
+      # Uptime Kuma usually has public status pages, skipping SSO on root, or protect it.
+      # Decided to protect.
+      - "traefik.http.routers.uptime.middlewares=authentik@file"
+      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
+
+  uptime-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: uptime-proxy
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - CONTAINERS=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+{% endif %}
+
+{% if enable_speedtest | default(false) | bool %}
+  speedtest:
+    image: lscr.io/linuxserver/librespeed:latest
+    container_name: speedtest
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+      - PASSWORD=password # Change in UI
+    volumes:
+      - /opt/appdata/speedtest:/config
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.speedtest.rule=Host(`speed.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.speedtest.entrypoints=websecure"
+      - "traefik.http.routers.speedtest.tls=true"
+      - "traefik.http.routers.speedtest.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.speedtest.middlewares=authentik@file"
+      - "traefik.http.services.speedtest.loadbalancer.server.port=80"
+{% endif %}
+
+{% if enable_kavita | default(false) | bool %}
+  kavita:
+    image: jvmilazz0/kavita:latest
+    container_name: kavita
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/kavita:/kavita/config
+      - /mnt/ceph/media/books:/manga
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kavita.rule=Host(`kavita.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.kavita.entrypoints=websecure"
+      - "traefik.http.routers.kavita.tls=true"
+      - "traefik.http.routers.kavita.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.kavita.middlewares=authentik@file"
+      - "traefik.http.services.kavita.loadbalancer.server.port=5000"
+{% endif %}
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,113 @@
+---
+# roles/ceph_client/tasks/ceph_mounts.yml
+# Create mount directories, configure fstab, and mount Ceph filesystems
+
+- name: Create Ceph mount directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /mnt/ceph
+    - /mnt/ceph/media
+    - /mnt/ceph/data
+    - /mnt/ceph-bbfs
+
+- name: Create Plex-specific Ceph mount directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /mnt/ceph/plex
+    - /mnt/ceph/plex/meta
+  when: is_plex | bool
+
+- name: Create Emby-specific Ceph mount directory
+  ansible.builtin.file:
+    path: /mnt/ceph/emby
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: is_emby | bool
+
+# --- fstab entries ---
+
+- name: Add Ceph media mount to fstab (Core)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.cephfs=/media/ /mnt/ceph/media/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/media/"
+    state: present
+  when: node_type not in ['share', 'appbox']
+
+- name: Add Ceph media mount to fstab (Edge - Read Only)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.cephfs=/media/ /mnt/ceph/media/ ceph ro,noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/media/"
+    state: present
+  when: node_type in ['share', 'appbox']
+
+- name: Add Ceph data mount to fstab (Core)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.cephfs=/data/ /mnt/ceph/data/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/data/"
+    state: present
+  when: node_type not in ['share', 'appbox']
+
+- name: Add Ceph data mount to fstab (Edge - Read Only)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.cephfs=/data/ /mnt/ceph/data/ ceph ro,noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/data/"
+    state: present
+  when: node_type in ['share', 'appbox']
+
+- name: Add Ceph Plex mount to fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.plexfs=/ /mnt/ceph/plex/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/plex/"
+    state: present
+  when: is_plex | bool
+
+- name: Add Ceph Emby mount to fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.embyfs=/ /mnt/ceph/emby/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph/emby/"
+    state: present
+  when: is_emby | bool
+
+# --- Backup Mounts ---
+
+- name: Add Ceph bbfs backup root mount to fstab (Core)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.bbfs=/blackbeard/ /mnt/ceph-bbfs/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph-bbfs/"
+    state: present
+  when: node_type not in ['share', 'appbox']
+
+- name: Add Ceph bbfs backup isolated mount to fstab (Edge)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ node_name }}@.bbfs=/blackbeard/{{ node_name }}/ /mnt/ceph-bbfs/ ceph noatime,nodiratime,_netdev 0 0"
+    regexp: "/mnt/ceph-bbfs/"
+    state: present
+  when: node_type in ['share', 'appbox']
+
+- name: Reload systemd daemon for fstab changes
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Mount all filesystems
+  ansible.builtin.command: mount -a
+  changed_when: true

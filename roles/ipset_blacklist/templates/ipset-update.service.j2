@@ -1,0 +1,9 @@
+[Unit]
+Description=Ipset Blacklist Update Service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo /mnt/ceph/data/scripts/blacklist/ipset-blacklist.sh /etc/ipset-blacklist/ipset-blacklist.conf'
+
+[Install]
+WantedBy=multi-user.target

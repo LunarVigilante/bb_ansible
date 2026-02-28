@@ -1,0 +1,100 @@
+# =============================================================================
+# Blackbeard Media — TCP/Network Performance Tuning
+# =============================================================================
+# Optimized for: Ceph storage reads → Docker containers → media streaming
+#
+# Workload profile:
+#   - Ceph client reading large sequential files (video) over TCP
+#   - Docker containers serving 50-200+ concurrent media streams
+#   - Mix of LAN (10G Ceph) and WAN (1G/10G client) traffic
+#   - Large file transfers (1-50GB video files)
+# =============================================================================
+
+# ═══ Congestion Control ═══
+# BBR is critical for streaming — handles packet loss gracefully
+# and achieves near-line-rate throughput on lossy WAN links
+net.ipv4.tcp_congestion_control = bbr
+net.core.default_qdisc = fq
+
+# ═══ TCP Buffer Sizes (min / default / max bytes) ═══
+# Tuned for Ceph reads: large buffers for 10G LAN, moderate for WAN clients
+#   - rmem: read buffers for ingesting from Ceph (16KB / 4MB / 64MB)
+#   - wmem: write buffers for streaming to clients (4KB / 1MB / 32MB)
+{% if is_10g_node | default(false) | bool %}
+# 10G node — extra-large buffers for Ceph RADOS reads
+net.ipv4.tcp_rmem = 16384 4194304 67108864
+net.ipv4.tcp_wmem = 4096 1048576 33554432
+net.core.rmem_max = 67108864
+net.core.wmem_max = 33554432
+net.core.rmem_default = 4194304
+net.core.wmem_default = 1048576
+{% else %}
+# 1G node — balanced buffers
+net.ipv4.tcp_rmem = 8192 2097152 16777216
+net.ipv4.tcp_wmem = 4096 524288 16777216
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.core.rmem_default = 2097152
+net.core.wmem_default = 524288
+{% endif %}
+
+# ═══ Connection Handling ═══
+# High concurrent streams = need lots of sockets and fast recycling
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_max_tw_buckets = 400000
+net.ipv4.tcp_max_orphans = 262144
+net.ipv4.tcp_max_syn_backlog = 16384
+net.core.somaxconn = 16384
+net.core.netdev_max_backlog = 16384
+
+# ═══ Keepalive — important for long-running media streams ═══
+# Check every 60s after 5min idle, drop after 3 misses (8min total)
+net.ipv4.tcp_keepalive_time = 300
+net.ipv4.tcp_keepalive_intvl = 60
+net.ipv4.tcp_keepalive_probes = 3
+
+# ═══ TCP Features ═══
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_fack = 1
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_adv_win_scale = -2
+net.ipv4.tcp_notsent_lowat = 131072
+
+# ═══ Security ═══
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_rfc1337 = 1
+net.ipv4.tcp_syn_retries = 3
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_abort_on_overflow = 0
+net.ipv4.tcp_orphan_retries = 2
+net.ipv4.tcp_retries2 = 8
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+
+# ═══ Memory Pressure ═══
+# TCP memory pages (min / pressure / max) — high values for many streams
+net.ipv4.tcp_mem = 786432 1048576 1572864
+
+# ═══ File Descriptors & inotify ═══
+# Media servers + Docker + Ceph = lots of open files and watches
+fs.file-max = 2097152
+fs.inotify.max_user_watches = 2097152
+fs.inotify.max_user_instances = 8192
+fs.inotify.max_queued_events = 32768
+
+# ═══ VM Tuning ═══
+# Reduce swap pressure — keep streaming data in memory
+vm.swappiness = 10
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+vm.vfs_cache_pressure = 50

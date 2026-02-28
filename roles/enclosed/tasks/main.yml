@@ -1,0 +1,29 @@
+---
+# roles/enclosed/tasks/main.yml
+# Deploy the Enclosed secure file/text sharing platform
+
+- name: Create Enclosed appdata directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/appdata/enclosed
+    - /opt/appdata/enclosed/storage
+    - /opt/compose/enclosed
+
+- name: Deploy Enclosed Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/enclosed/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Enclosed stack
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/enclosed
+  changed_when: true

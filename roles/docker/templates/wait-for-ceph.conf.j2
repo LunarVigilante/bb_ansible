@@ -1,0 +1,2 @@
+[Unit]
+After=mnt-ceph-data.mount mnt-ceph-media.mount{% if is_plex | bool %} mnt-ceph-plex.mount{% endif %}{% if is_emby | bool %} mnt-ceph-emby.mount{% endif %}

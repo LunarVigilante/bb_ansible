@@ -1,0 +1,53 @@
+---
+# roles/authentik/tasks/main.yml
+# Deploy Authentik Single Sign-On Architecture
+
+- name: Create Authentik directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/authentik
+    - /opt/authentik/database
+    - /opt/authentik/redis
+    - /opt/authentik/media
+    - /opt/authentik/custom-templates
+    - /opt/authentik/certs
+
+- name: Deploy Authentik configuration (.env)
+  ansible.builtin.template:
+    src: authentik.env.j2
+    dest: /opt/authentik/.env
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Deploy Authentik Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/authentik/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Authentik
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/authentik
+  changed_when: true
+
+- name: Display Authentik connection info
+  ansible.builtin.debug:
+    msg: |
+      ┌──────────────────────────────────────────────────────────┐
+      │  Authentik SSO Portal Deployed                           │
+      │                                                          │
+      │  Internal API: http://{{ node_ip }}:{{ authentik_port_http }}
+      │  Initial Setup: http://{{ node_ip }}:{{ authentik_port_http }}/if/flow/initial-setup/
+      │  Domain: {{ authentik_domain }}
+      │                                                          │
+      │  Note: Startup takes ~1-2 minutes for DB migrations.     │
+      └──────────────────────────────────────────────────────────┘

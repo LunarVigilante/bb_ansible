@@ -1,0 +1,27 @@
+---
+# roles/ceph_client/tasks/main.yml
+# Deploy Ceph configuration, create user via REST API, deploy keyring, mount filesystems
+
+- name: Ensure /etc/ceph directory exists
+  ansible.builtin.file:
+    path: /etc/ceph
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy Ceph configuration
+  ansible.builtin.template:
+    src: ceph.conf.j2
+    dest: /etc/ceph/ceph.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+# Create Ceph user and get keyring via Dashboard REST API
+- name: Create Ceph user via Dashboard REST API
+  ansible.builtin.include_tasks: ceph_api_user.yml
+
+# Mount Ceph filesystems
+- name: Configure and mount Ceph filesystems
+  ansible.builtin.include_tasks: ceph_mounts.yml

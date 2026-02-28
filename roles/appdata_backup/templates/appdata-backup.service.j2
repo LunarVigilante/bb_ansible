@@ -1,0 +1,10 @@
+[Unit]
+Description=Blackbeard AppData Backup Service
+After=network.target docker.service mnt-ceph\x2dbbfs.mount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/appdata-backup.sh
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=appdata-backup

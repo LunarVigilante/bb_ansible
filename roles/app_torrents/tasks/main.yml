@@ -1,0 +1,35 @@
+---
+# roles/app_torrents/tasks/main.yml
+# Deploy Torrent, Usenet, and Seeding ecosystem applications
+
+- name: Create base appdata directories for Torrent apps
+  ansible.builtin.file:
+    path: "/opt/appdata/{{ item.name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ qbittorrent_instances | default([]) + sabnzbd_instances | default([]) + cross_seed_instances | default([]) + autobrr_instances | default([]) + omegabrr_instances | default([]) + qbit_manage_instances | default([]) }}"
+  when: item.name is defined
+
+- name: Create app_torrents compose directory
+  ansible.builtin.file:
+    path: /opt/compose/app_torrents
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy app_torrents Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/app_torrents/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start app_torrents
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/app_torrents
+  changed_when: true

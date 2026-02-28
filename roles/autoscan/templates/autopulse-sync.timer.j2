@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Autopulse Sync Every 5 Minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+RandomizedDelaySec=10s
+
+[Install]
+WantedBy=timers.target

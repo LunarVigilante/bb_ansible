@@ -1,0 +1,191 @@
+# Open WebUI Stack — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+  open-webui:
+    restart: unless-stopped
+    container_name: open-webui
+    image: ghcr.io/open-webui/open-webui:main
+    hostname: open-webui
+    cgroup_parent: kronos.slice
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - tika
+      - pipelines
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+      - DATABASE_URL=postgresql://{{ vault_openwebui_postgres_user }}:{{ vault_openwebui_postgres_password }}@postgres:5432/{{ vault_openwebui_postgres_db }}
+      - REDIS_URL=redis://redis:6379/0
+      - ENABLE_WEBSOCKET_SUPPORT=true
+      - WEBSOCKET_MANAGER=redis
+      - WEBSOCKET_REDIS_URL=redis://redis:6379/1
+      - CORS_ALLOW_ORIGIN=https://chat.{{ traefik_domains[0].main }}
+      - 'AIOHTTP_CLIENT_HEADERS={"X-Accel-Buffering": "no"}'
+      - USE_X_FORWARDED_HOST=true
+      - WEBUI_URL=https://chat.{{ traefik_domains[0].main }}
+      - VECTOR_DB=qdrant
+      - QDRANT_URI=http://qdrant:6333
+      - ENABLE_OLLAMA_API=false
+      - ENABLE_OPENAI_API=true
+      - OPENAI_API_BASE_URLS=https://openrouter.ai/api/v1;http://pipelines:9099;http://mcpo:8080
+      - OPENAI_API_KEYS={{ vault_openwebui_openrouter_api_key }};0p3n-w3bu!;0p3nw3bmcp0
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=tavily
+      - TAVILY_API_KEY={{ vault_openwebui_tavily_api_key }}
+      - ENABLE_IMAGE_GENERATION=true
+      - IMAGE_GENERATION_ENGINE=gemini
+      - IMAGE_API_KEY={{ vault_openwebui_google_api_key }}
+      - IMAGE_MODEL=imagen-4.0-generate-001
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - TIKA_SERVER_URL=http://tika:9998
+      - AIOHTTP_CLIENT_TIMEOUT=600
+      - KEEPALIVE_TIMEOUT=600
+      - AIOHTTP_CLIENT_POOL_SIZE=100
+      - GLOBAL_LOG_LEVEL=DEBUG
+      - OAUTH_CLIENT_ID={{ vault_openwebui_oauth_client_id }}
+      - OAUTH_CLIENT_SECRET={{ vault_openwebui_oauth_client_secret }}
+      - OAUTH_PROVIDER_NAME=authentik
+      - OPENID_PROVIDER_URL=https://auth.{{ traefik_domains[0].main }}/application/o/open-webui/.well-known/openid-configuration
+      - OPENID_REDIRECT_URI=https://chat.{{ traefik_domains[0].main }}/oauth/oidc/callback
+      - ENABLE_OAUTH_SIGNUP=true
+      - ENABLE_LOGIN_FORM=false
+      - OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.ow-headers.headers.customResponseHeaders.X-Accel-Buffering=no"
+      - "traefik.http.middlewares.ow-retry.retry.attempts=3"
+      - "traefik.http.middlewares.ow-nobuffer.buffering.maxResponseBodyBytes=0"
+      - "traefik.http.middlewares.ow-nobuffer.buffering.memResponseBodyBytes=0"
+      - "traefik.http.middlewares.ow-nobuffer.buffering.maxRequestBodyBytes=0"
+      - "traefik.http.middlewares.ow-nobuffer.buffering.memRequestBodyBytes=0"
+      - "traefik.http.routers.open-webui.entrypoints=websecure"
+      - "traefik.http.routers.open-webui.middlewares=ow-headers,ow-nobuffer,ow-retry"
+      - "traefik.http.routers.open-webui.rule=Host(`chat.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.open-webui.tls=true"
+      - "traefik.http.routers.open-webui.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+    volumes:
+      - /opt/appdata/open_webui/data:/app/backend/data
+      - /etc/localtime:/etc/localtime:ro
+
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    hostname: mcpo
+    restart: always
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/open_webui/mcpo/config.json:/app/config.json
+      - /opt/appdata/open_webui/cache/uv:/root/.cache/uv
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    command: >
+      mcpo --config /app/config.json --port 8080
+
+  pipelines:
+    restart: unless-stopped
+    container_name: pipelines
+    image: ghcr.io/open-webui/pipelines:main
+    hostname: pipelines
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+      - PIPELINES_URL=http://pipelines:9099
+      - PIPELINES_REQUIREMENTS_PATH=pipelines/requirements.txt
+    networks:
+      - proxy
+    volumes:
+      - /opt/appdata/open_webui/pipelines:/app/pipelines
+      - /etc/localtime:/etc/localtime:ro
+
+  postgres:
+    restart: unless-stopped
+    container_name: postgres-openwebui
+    image: postgres:15-alpine
+    hostname: postgres
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - POSTGRES_USER={{ vault_openwebui_postgres_user }}
+      - POSTGRES_PASSWORD={{ vault_openwebui_postgres_password }}
+      - POSTGRES_DB={{ vault_openwebui_postgres_db }}
+      - TZ={{ timezone }}
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ vault_openwebui_postgres_user }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - /opt/appdata/open_webui/database:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+
+  redis:
+    restart: unless-stopped
+    container_name: redis-openwebui
+    image: redis:alpine
+    hostname: redis
+    cgroup_parent: kronos.slice
+    command: redis-server --save 60 1 --loglevel warning
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    networks:
+      - proxy
+    volumes:
+      - /opt/appdata/open_webui/redis:/data
+      - /etc/localtime:/etc/localtime:ro
+
+  qdrant:
+    restart: unless-stopped
+    container_name: qdrant
+    image: qdrant/qdrant:latest
+    hostname: qdrant
+    cgroup_parent: kronos.slice
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    networks:
+      - proxy
+    volumes:
+      - /opt/appdata/open_webui/qdrant:/qdrant/storage
+      - /etc/localtime:/etc/localtime:ro
+
+  tika:
+    restart: unless-stopped
+    container_name: tika
+    image: apache/tika:latest
+    hostname: tika
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    networks:
+      - proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+
+networks:
+  proxy:
+    external: true

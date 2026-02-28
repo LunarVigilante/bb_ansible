@@ -1,0 +1,16 @@
+[Unit]
+Description=Blackbeard Gluetun-Plex Watcher
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/gluetun-watcher.sh
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=gluetun-watcher
+
+[Install]
+WantedBy=multi-user.target

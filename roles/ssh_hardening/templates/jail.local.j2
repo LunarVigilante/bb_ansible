@@ -1,0 +1,42 @@
+# /etc/fail2ban/jail.local
+# Managed by Blackbeard Ansible — do not edit manually
+
+[DEFAULT]
+# Ban for 1 hour on first offense
+bantime = {{ fail2ban_bantime }}
+maxretry = {{ fail2ban_maxretry }}
+findtime = {{ fail2ban_findtime }}
+
+# Use systemd journal as log backend (works on both Arch + Ubuntu with systemd)
+backend = systemd
+
+# Action: ban IP via iptables and log it
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+
+# Ignore localhost
+ignoreip = 127.0.0.1/8 ::1
+
+# ═══ SSH Brute Force ═══
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+maxretry = {{ fail2ban_maxretry }}
+bantime = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+
+# Aggressive mode — catches more attack patterns including auth failures
+# that don't always show in normal mode
+mode = aggressive
+
+# ═══ Recidive — escalating ban for repeat offenders ═══
+# If an IP gets banned 3 times across ANY jail, ban it for 1 week
+[recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+bantime = 604800
+findtime = 86400
+maxretry = 3
+banaction = iptables-allports

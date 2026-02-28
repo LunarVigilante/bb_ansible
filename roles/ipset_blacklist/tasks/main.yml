@@ -1,0 +1,69 @@
+---
+# roles/ipset_blacklist/tasks/main.yml
+# Deploy ipset blacklist update services and timers
+
+- name: Create ipset-blacklist config directory
+  ansible.builtin.file:
+    path: /etc/ipset-blacklist
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy initial blacklist config from Ceph
+  ansible.builtin.copy:
+    src: /mnt/ceph/data/scripts/blacklist/ipset-blacklist.conf
+    dest: /etc/ipset-blacklist/ipset-blacklist.conf
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+
+# --- Blacklist config copy service + timer ---
+
+- name: Deploy ipset blacklist config update service
+  ansible.builtin.template:
+    src: ipset-blacklist-update.service.j2
+    dest: /etc/systemd/system/ipset-blacklist-update.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy ipset blacklist config update timer
+  ansible.builtin.template:
+    src: ipset-blacklist-update.timer.j2
+    dest: /etc/systemd/system/ipset-blacklist-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+# --- Blacklist apply service + timer ---
+
+- name: Deploy ipset blacklist apply service
+  ansible.builtin.template:
+    src: ipset-update.service.j2
+    dest: /etc/systemd/system/ipset-update.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy ipset blacklist apply timer
+  ansible.builtin.template:
+    src: ipset-update.timer.j2
+    dest: /etc/systemd/system/ipset-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start ipset blacklist timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - ipset-blacklist-update.timer
+    - ipset-update.timer

@@ -1,0 +1,185 @@
+---
+# roles/docker/tasks/main.yml
+# Install Docker (version-pinned), configure user, Ceph-wait override, base containers
+
+# --- Install Docker ---
+
+- name: Install Docker (Arch)
+  community.general.pacman:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+# Pin Docker version on Arch (prevent pacman -Syu from upgrading past target)
+- name: Pin Docker version in pacman.conf (Arch)
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?IgnorePkg'
+    line: "IgnorePkg = docker docker-compose"
+    insertafter: '^\[options\]'
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+# Ubuntu: install from official Docker repo for version control
+- name: Add Docker GPG key (Ubuntu)
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Docker APT repo (Ubuntu)
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install Docker {{ docker_version }} (Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - "docker-ce={{ docker_version }}*"
+      - "docker-ce-cli={{ docker_version }}*"
+      - docker-compose-plugin
+      - containerd.io
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+# Hold Docker at pinned version (prevent apt upgrade)
+- name: Hold Docker version (Ubuntu)
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - docker-ce
+    - docker-ce-cli
+  when: ansible_os_family == "Debian"
+
+# --- QoS & Docker daemon config ---
+
+- name: Deploy kronos.slice for QoS
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Kronos User Containers QoS Slice
+      Before=slices.target
+
+      [Slice]
+      CPUWeight=50
+      IOWeight=50
+    dest: /etc/systemd/system/kronos.slice
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd and restart docker
+
+- name: Deploy Docker daemon.json
+  ansible.builtin.copy:
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        },
+        "live-restore": true,
+        "storage-driver": "overlay2",
+        "cgroup-parent": "kronos.slice"
+      }
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd and restart docker
+
+- name: Reload systemd to pick up kronos.slice explicitly
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add admin to docker group
+  ansible.builtin.user:
+    name: admin
+    groups: docker
+    append: true
+
+# --- Wait-for-Ceph systemd override ---
+
+- name: Create Docker systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy wait-for-ceph Docker override
+  ansible.builtin.template:
+    src: wait-for-ceph.conf.j2
+    dest: /etc/systemd/system/docker.service.d/wait-for-ceph.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd and restart docker
+
+# --- Docker Networks ---
+
+- name: Create Docker networks
+  ansible.builtin.command: >
+    docker network create
+    --driver=bridge
+    --subnet={{ item.subnet }}
+    --ip-range={{ item.ip_range }}
+    --gateway={{ item.gateway }}
+    --opt com.docker.network.bridge.host_binding_ipv4=0.0.0.0
+    --opt com.docker.network.bridge.name={{ item.name }}
+    --opt com.docker.network.bridge.enable_icc=true
+    --opt com.docker.network.driver.mtu=1500
+    {{ item.name }}
+  loop: "{{ docker_networks }}"
+  register: network_result
+  failed_when:
+    - network_result.rc != 0
+    - "'already exists' not in network_result.stderr"
+  changed_when: network_result.rc == 0
+
+# --- Base Containers ---
+
+- name: Run Portainer agent container
+  community.docker.docker_container:
+    name: portainer_agent
+    image: "portainer/agent:{{ portainer_agent_version }}"
+    state: started
+    restart_policy: always
+    cgroup_parent: system.slice
+    ports:
+      - "9001:9001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+
+- name: Run autoheal container
+  community.docker.docker_container:
+    name: autoheal
+    image: willfarrell/autoheal
+    state: started
+    restart_policy: always
+    cgroup_parent: system.slice
+    env:
+      AUTOHEAL_CONTAINER_LABEL: "all"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+# --- dops (better docker ps) ---
+
+- name: Download dops binary
+  ansible.builtin.get_url:
+    url: https://github.com/Mikescher/better-docker-ps/releases/latest/download/dops_linux-amd64-static
+    dest: /usr/local/bin/dops
+    mode: "0755"

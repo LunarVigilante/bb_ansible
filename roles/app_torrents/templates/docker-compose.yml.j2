@@ -1,0 +1,166 @@
+# Torrents and Downloaders — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+
+# === QBITTORRENT INSTANCES ===
+{% for instance in qbittorrent_instances | default([]) %}
+  {{ instance.name }}:
+    image: saltydk/qbittorrent:release-5.1.2_v1.2.20
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+      - WEBUI_PORT={{ instance.port }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+    ports:
+      - "{{ instance.port }}:{{ instance.port }}"
+      - "{{ instance.port }}:{{ instance.port }}/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port={{ instance.port }}"
+{% endfor %}
+
+# === SABNZBD INSTANCES ===
+{% for instance in sabnzbd_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/sabnzbd:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8080"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=8080"
+{% endfor %}
+
+# === CROSS-SEED INSTANCES ===
+{% for instance in cross_seed_instances | default([]) %}
+  {{ instance.name }}:
+    image: cross-seed/cross-seed:6
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    command: daemon
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media/torrents:/torrents:ro
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:2468"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=2468"
+{% endfor %}
+
+# === AUTOBRR INSTANCES ===
+{% for instance in autobrr_instances | default([]) %}
+  {{ instance.name }}:
+    image: autobrr/autobrr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:7474"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=7474"
+{% endfor %}
+
+# === OMEGABRR INSTANCES ===
+{% for instance in omegabrr_instances | default([]) %}
+  {{ instance.name }}:
+    image: autobrr/omegabrr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:7441"
+{% endif %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=7441"
+{% endfor %}
+
+# === QBIT-MANAGE INSTANCES ===
+{% for instance in qbit_manage_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/qbitmanage:release
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+      - QBT_RUN=true
+      - QBT_CONFIG=/config/config.yml
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% endfor %}
+
+networks:
+  proxy:
+    external: true

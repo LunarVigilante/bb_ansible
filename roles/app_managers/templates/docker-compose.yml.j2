@@ -1,0 +1,189 @@
+# Application Managers — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+
+# === AUTOSCAN INSTANCES ===
+{% for instance in autoscan_instances | default([]) %}
+  {{ instance.name }}:
+    image: saltydk/autoscan:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media:ro
+    networks:
+      - proxy
+    # Autoscans typically listen on 3026 internally if we map it
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:3026"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ instance.name }}.rule=Host(`{{ instance.name }}.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.{{ instance.name }}.entrypoints=websecure"
+      - "traefik.http.routers.{{ instance.name }}.tls=true"
+      - "traefik.http.routers.{{ instance.name }}.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.{{ instance.name }}.loadbalancer.server.port=3026"
+{% endif %}
+{% endfor %}
+
+# === NOTIFIARR INSTANCES ===
+{% for instance in notifiarr_instances | default([]) %}
+  {{ instance.name }}:
+    image: golift/notifiarr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - TZ={{ timezone }}
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:5454"
+{% endif %}
+{% endfor %}
+
+# === UNPACKERR INSTANCES ===
+{% for instance in unpackerr_instances | default([]) %}
+  {{ instance.name }}:
+    image: hotio/unpackerr:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/mnt/ceph/media
+    networks:
+      - proxy
+{% endfor %}
+
+# === SCRUTINY INSTANCES ===
+{% for instance in scrutiny_instances | default([]) %}
+  {{ instance.name }}:
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    cap_add:
+      - SYS_RAWIO
+    devices:
+{% for disk in get_devices | default([]) %}
+      - {{ disk }}:{{ disk }}
+{% endfor %}
+    volumes:
+      - /opt/appdata/{{ instance.name }}/config:/opt/scrutiny/config
+      - /opt/appdata/{{ instance.name }}/influxdb:/opt/scrutiny/influxdb
+      - /run/udev:/run/udev:ro
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:8080"
+{% endif %}
+{% endfor %}
+
+# === MKVTOOLNIX INSTANCES ===
+{% for instance in mkvtoolnix_instances | default([]) %}
+  {{ instance.name }}:
+    image: jlesage/mkvtoolnix:latest
+    container_name: {{ instance.name }}
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/appdata/{{ instance.name }}:/config
+      - /mnt/ceph/media:/storage
+    networks:
+      - proxy
+{% if instance.port is defined %}
+    ports:
+      - "{{ instance.port }}:5800"
+{% endif %}
+{% endfor %}
+
+
+# === TRACEARR STACK ===
+# Configured as a singular boolean stack instead of a loop because Tracearr 
+# requires its own paired TimescaleDB and Redis sidecars.
+{% if enable_tracearr | default(false) | bool %}
+  tracearr:
+    image: connorgallopo/tracearr:latest
+    container_name: tracearr
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - APP_ENV=production
+      - DB_HOST=tracearr-db
+      - DB_PORT=5432
+      - REDIS_HOST=tracearr-redis
+      - REDIS_PORT=6379
+    volumes:
+      - /opt/appdata/tracearr:/app/config
+    ports:
+      - "8089:8080"
+    depends_on:
+      - tracearr-db
+      - tracearr-redis
+    networks:
+      - proxy
+      - tracearr-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tracearr.rule=Host(`tracearr.{{ traefik_domains[0].main }}`)"
+      - "traefik.http.routers.tracearr.entrypoints=websecure"
+      - "traefik.http.routers.tracearr.tls=true"
+      - "traefik.http.routers.tracearr.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.tracearr.middlewares=authentik@file"
+      - "traefik.http.services.tracearr.loadbalancer.server.port=8080"
+
+  tracearr-db:
+    image: timescale/timescaledb-ha:pg18.1-ts2.25.0
+    container_name: tracearr-db
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=tracearr
+    volumes:
+      - /opt/appdata/tracearr/db:/var/lib/postgresql/data
+    networks:
+      - tracearr-net
+
+  tracearr-redis:
+    image: redis:8-alpine
+    container_name: tracearr-redis
+    restart: unless-stopped
+    cgroup_parent: kronos.slice
+    volumes:
+      - /opt/appdata/tracearr/redis:/data
+    networks:
+      - tracearr-net
+{% endif %}
+
+networks:
+  proxy:
+    external: true
+{% if enable_tracearr | default(false) | bool %}
+  tracearr-net:
+    internal: true
+{% endif %}

@@ -1,0 +1,37 @@
+---
+# roles/observability_agents/tasks/main.yml
+# Deploy lightweight edge agents (Promtail, cAdvisor, Node Exporter) to all nodes
+# Targets: All nodes (including Baremetal Apps)
+
+- name: Create base directories for observability agents
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/appdata/promtail
+    - /opt/compose/observability_agents
+
+- name: Deploy Promtail config
+  ansible.builtin.template:
+    src: promtail-config.yaml.j2
+    dest: /opt/appdata/promtail/promtail-config.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Observability Agents Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/observability_agents/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Observability Agents
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/observability_agents
+  changed_when: true

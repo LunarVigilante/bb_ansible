@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s     # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # All downstream nodes running node_exporter (hardware limits)
+  - job_name: 'node_exporter'
+    static_configs:
+{% for host in groups['all'] %}
+{% if hostvars[host]['ansible_default_ipv4'] is defined %}
+      - targets: ['{{ hostvars[host]['ansible_default_ipv4']['address'] }}:9100']
+        labels:
+          node: '{{ hostvars[host]['node_name'] | default(host) }}'
+{% endif %}
+{% endfor %}
+
+  # All downstream nodes running cAdvisor (container limits)
+  - job_name: 'cadvisor'
+    static_configs:
+{% for host in groups['all'] %}
+{% if hostvars[host]['ansible_default_ipv4'] is defined %}
+      - targets: ['{{ hostvars[host]['ansible_default_ipv4']['address'] }}:8080']
+        labels:
+          node: '{{ hostvars[host]['node_name'] | default(host) }}'
+{% endif %}
+{% endfor %}

@@ -1,0 +1,221 @@
+---
+# =============================================================================
+# Blackbeard Media — Main Playbook
+# =============================================================================
+# Driven by config files (accounts.yml + settings.yml), not interactive prompts.
+#
+# Usage via bb CLI:
+#   bb install core              # Base system only
+#   bb install node              # Full provisioning
+#   bb install docker            # Single component
+#   bb install core,docker,ceph  # Multiple components
+#
+# Direct usage:
+#   ansible-playbook setup.yml --tags core
+# =============================================================================
+
+- name: Blackbeard Media — Node Provisioning
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars_files:
+    - accounts.yml
+    - settings.yml
+    - group_vars/all.yml
+
+  pre_tasks:
+    # --- Derived variables ---
+    - name: Set derived variables
+      ansible.builtin.set_fact:
+        node_ip: "{{ ansible_default_ipv4.address }}"
+        has_secondary_drive: "{{ secondary_drive != 'none' }}"
+        is_plex: "{{ media_service == 'plex' }}"
+        is_emby: "{{ media_service == 'emby' }}"
+        is_jellyfin: "{{ media_service == 'jellyfin' }}"
+        is_share: "{{ node_type == 'share' }}"
+        is_appbox: "{{ node_type == 'appbox' }}"
+        is_baremetal: "{{ node_type == 'baremetal' }}"
+        is_10g: "{{ is_10g_node | bool }}"
+      tags: ['always']
+
+    # --- Load Data-Driven Node Topology ---
+    - name: Load node-specific cluster apps
+      ansible.builtin.include_vars:
+        file: "host_vars/{{ node_name }}.yml"
+      ignore_errors: true
+      tags: ['always']
+
+    # --- Remap account vars to vault-style names for role compatibility ---
+    - name: Map account credentials to role variables
+      ansible.builtin.set_fact:
+        vault_admin_password: "{{ admin_password }}"
+        vault_ceph_dashboard_url: "{{ ceph_dashboard_url }}"
+        vault_ceph_dashboard_user: "{{ ceph_dashboard_user }}"
+        vault_ceph_dashboard_password: "{{ ceph_dashboard_password }}"
+        vault_cf_email: "{{ cf_email }}"
+        vault_cf_auth_key: "{{ cf_auth_key }}"
+        vault_cf_api_token: "{{ cf_api_token }}"
+        vault_musics_api_key: "{{ musics_api_key }}"
+        vault_autoscan_password: "{{ autoscan_password | default('') }}"
+        vault_authentik_postgresql_password: "{{ authentik_postgresql_password | default('') }}"
+        vault_authentik_secret_key: "{{ authentik_secret_key | default('') }}"
+        vault_openwebui_postgres_user: "{{ openwebui_postgres_user | default('postgres') }}"
+        vault_openwebui_postgres_password: "{{ openwebui_postgres_password | default('') }}"
+        vault_openwebui_postgres_db: "{{ openwebui_postgres_db | default('openwebui') }}"
+        vault_openwebui_openrouter_api_key: "{{ openwebui_openrouter_api_key | default('') }}"
+        vault_openwebui_tavily_api_key: "{{ openwebui_tavily_api_key | default('') }}"
+        vault_openwebui_google_api_key: "{{ openwebui_google_api_key | default('') }}"
+        vault_openwebui_oauth_client_id: "{{ openwebui_oauth_client_id | default('') }}"
+        vault_openwebui_oauth_client_secret: "{{ openwebui_oauth_client_secret | default('') }}"
+      tags: ['always']
+      no_log: true
+
+    # --- Validation ---
+    - name: Validate node_name is set
+      ansible.builtin.assert:
+        that:
+          - node_name | length > 0
+        fail_msg: "node_name is empty in settings.yml. Set it before running install."
+      tags: ['always']
+
+    - name: Validate media_service
+      ansible.builtin.assert:
+        that:
+          - media_service in ['emby', 'plex', 'jellyfin']
+        fail_msg: "Invalid media_service '{{ media_service }}'. Must be emby, plex, or jellyfin."
+      tags: ['always']
+
+    - name: Validate node_type
+      ansible.builtin.assert:
+        that:
+          - node_type in ['share', 'appbox', 'baremetal']
+        fail_msg: "Invalid node_type '{{ node_type }}'. Must be share, appbox, or baremetal."
+      tags: ['always']
+
+    - name: Display configuration summary
+      ansible.builtin.debug:
+        msg: |
+          ┌─────────────────────────────────────┐
+          │  Node Configuration                 │
+          ├─────────────────────────────────────┤
+          │  Name:           {{ node_name }}
+          │  Media Service:  {{ media_service }}
+          │  Node Type:      {{ node_type }}
+          │  10Gbps:         {{ is_10g_node }}
+          │  Secondary Drive:{{ secondary_drive }}
+          │  Emby Tier:      {{ emby_tier }}
+          │  OS Family:      {{ ansible_os_family }}
+          │  Timezone:       {{ timezone }}
+          └─────────────────────────────────────┘
+      tags: ['always']
+
+  roles:
+    # ═══ Core Roles (bb install core) ═══
+    - role: base
+      tags: ['base']
+
+    - role: users
+      tags: ['users']
+
+    - role: packages
+      tags: ['packages']
+
+    - role: ssh_hardening
+      tags: ['ssh']
+
+    - role: tcp_tuning
+      tags: ['tcp']
+
+    - role: lvm_extend
+      tags: ['lvm']
+      when: has_secondary_drive | bool
+
+    - role: ethtool_buffer
+      tags: ['ethtool']
+
+    # ═══ Infrastructure Roles ═══
+    - role: ceph_client
+      tags: ['ceph']
+
+    - role: docker
+      tags: ['docker']
+
+    # ═══ Security & Observability Roles ═══
+    - role: crowdsec
+      tags: ['crowdsec']
+
+    - role: diun
+      tags: ['diun']
+
+    - role: beszel
+      tags: ['beszel']
+
+    # ═══ Service Roles ═══
+    - role: ipset_blacklist
+      tags: ['ipset']
+
+    - role: traefik
+      tags: ['traefik']
+
+    - role: authentik
+      tags: ['authentik']
+
+    - role: autoscan
+      tags: ['autoscan']
+      when: is_share | bool
+
+    - role: gluetun
+      tags: ['gluetun']
+      when: is_plex | bool
+
+    - role: gluetun_watcher
+      tags: ['gluetun_watcher']
+      when: is_plex | bool
+
+    - role: appdata_backup
+      tags: ['backup', 'core', 'node']
+
+    - role: finishing
+      tags: ['finishing']
+
+    # ═══ Data-Driven Feeder & Service Applications ═══
+    - role: app_services
+      tags: ['app_services', 'apps', 'core', 'node']
+
+    - role: app_arrs
+      tags: ['app_arrs', 'apps', 'core', 'node']
+
+    - role: app_torrents
+      tags: ['app_torrents', 'apps', 'core', 'node']
+
+    - role: app_managers
+      tags: ['app_managers', 'apps', 'core', 'node']
+
+    - role: open_webui
+      tags: ['open_webui', 'apps', 'core', 'node']
+      when: "'svc' in inventory_hostname"
+
+    - role: enclosed
+      tags: ['enclosed', 'apps', 'core', 'node']
+      when: "'svc' in inventory_hostname"
+
+    # ═══ Deep Observability (PLG Stack) ═══
+    - role: observability_core
+      tags: ['observability_core', 'observability', 'core', 'node']
+      when: "'svc' in inventory_hostname"
+
+    - role: observability_agents
+      tags: ['observability_agents', 'observability', 'core', 'node']
+
+  post_tasks:
+    - name: Provisioning complete
+      ansible.builtin.debug:
+        msg: |
+          ✅ '{{ node_name }}' provisioned successfully!
+
+          Next steps:
+            1. SSH in as admin: ssh admin@{{ node_ip }}
+            2. Add node to Portainer: {{ node_ip }}:9001
+            3. Deploy containers via Portainer templates
+      tags: ['always']

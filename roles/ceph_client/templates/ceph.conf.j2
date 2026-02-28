@@ -1,0 +1,25 @@
+# Ceph configuration for {{ ceph_fsid }}
+# Managed by Blackbeard Ansible
+
+[global]
+    fsid = {{ ceph_fsid }}
+    mon_host = {{ ceph_mon_hosts }}
+
+    # --- Client Performance Tuning ---
+    # Increase readahead for large sequential reads (video streaming)
+    client_readahead_max_bytes = 8388608
+    client_readahead_max_periods = 8
+
+    # Increase OSD operation threads for higher throughput
+    osd_op_threads = 8
+
+    # Enable CRC for data integrity over network
+    ms_crc_data = true
+    ms_crc_header = true
+
+    # Use msgr2 (v2) protocol
+    ms_bind_msgr2 = true
+
+    # Logging (keep minimal for performance)
+    debug_client = 0/0
+    debug_objecter = 0/0

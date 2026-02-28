@@ -1,0 +1,60 @@
+---
+# roles/crowdsec/tasks/main.yml
+# CrowdSec IDS — community-powered intrusion detection + Traefik bouncer
+#
+# CrowdSec replaces fail2ban for HTTP/web-layer protection with:
+# - Crowdsourced IP blocklists (proactive blocking)
+# - Machine learning-based detection for bots, DDoS, scans
+# - Traefik plugin bouncer for automatic blocking at the edge
+#
+# fail2ban remains installed for SSH protection (ssh_hardening role)
+
+- name: Create CrowdSec directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/crowdsec
+    - /opt/crowdsec/config
+    - /opt/crowdsec/data
+
+- name: Deploy CrowdSec acquis.yaml (log sources)
+  ansible.builtin.template:
+    src: acquis.yaml.j2
+    dest: /opt/crowdsec/config/acquis.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Run CrowdSec container
+  community.docker.docker_container:
+    name: crowdsec
+    image: "crowdsecurity/crowdsec:{{ crowdsec_version }}"
+    state: started
+    restart_policy: unless-stopped
+    env:
+      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
+      GID: "1000"
+      BOUNCER_KEY_TRAEFIK: "{{ vault_crowdsec_traefik_bouncer_key | default('CHANGE_ME_crowdsec_bouncer_key') }}"
+    networks:
+      - name: proxy
+    ports:
+      - "127.0.0.1:8080:8080"    # CrowdSec API (local only)
+    volumes:
+      - /opt/crowdsec/config/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - /opt/crowdsec/data:/var/lib/crowdsec/data
+      - /var/log:/var/log:ro
+      - /opt/traefik/log:/var/log/traefik:ro
+
+- name: Enroll CrowdSec instance (optional — community blocklists)
+  ansible.builtin.command: >
+    docker exec crowdsec cscli console enroll {{ crowdsec_enroll_key }}
+  when: crowdsec_enroll_key | default('') | length > 0
+  register: enroll_result
+  changed_when: enroll_result.rc == 0
+  failed_when:
+    - enroll_result.rc != 0
+    - "'already enrolled' not in enroll_result.stderr"

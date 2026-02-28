@@ -1,0 +1,77 @@
+---
+# =============================================================================
+# Blackbeard Media — Account Credentials
+# =============================================================================
+# Fill in your credentials below. This file is gitignored — never commit it.
+#
+# Copy from template:  cp accounts.yml.default accounts.yml
+# Edit:                nano accounts.yml
+# Encrypt (optional):  ansible-vault encrypt accounts.yml
+# =============================================================================
+
+# --- Admin User ---
+admin_password: "CHANGE_ME_your_secure_password"
+
+# --- Ceph Dashboard REST API ---
+ceph_dashboard_url: "https://ceph-dashboard.example.com:8443"
+ceph_dashboard_user: "admin"
+ceph_dashboard_password: ""
+
+# --- Cloudflare (Traefik ACME DNS-01) ---
+cf_email: "you@example.com"
+cf_auth_key: ""             # Global API key (legacy)
+cf_api_token: ""            # Scoped API token (recommended — Zone:DNS:Edit)
+
+# --- Media Server Tokens ---
+plex_token: ""              # Settings → Plex Web → XML → myPlexAccessToken
+jellyfin_api_key: ""        # Dashboard → API Keys → Add
+emby_api_key: ""            # Settings → Advanced → API Keys
+
+# --- *arr Stack API Keys ---
+# Found in each app: Settings → General → API Key
+sonarr_api_key: ""
+radarr_api_key: ""
+lidarr_api_key: ""
+readarr_api_key: ""
+prowlarr_api_key: ""
+bazarr_api_key: ""
+
+# --- Autopulse (Media Update Notifier) ---
+# Leave blank to auto-generate a random password during install.
+autoscan_password: ""
+
+# --- CrowdSec ---
+# Enroll key for community blocklist (free at https://app.crowdsec.net)
+crowdsec_enroll_key: ""
+# Predetermined API key for the Traefik bouncer plugin
+crowdsec_traefik_bouncer_key: "CHANGE_ME_crowdsec_bouncer_key"
+
+# --- Authentik (SSO) ---
+# Generate a secret key (openssl rand -base64 36)
+authentik_secret_key: "CHANGE_ME_authentik_secret_key"
+authentik_postgresql_password: "CHANGE_ME_authentik_db_password"
+
+# --- Beszel (Server Monitoring) ---
+# Generate the hub key from your Beszel Hub web UI → Add System
+beszel_hub_key: ""
+beszel_hub_url: ""          # e.g. https://beszel.yourdomain.com
+
+# --- Dockwatch (Container Update Management) ---
+# Configured entirely via web UI — no credentials needed here
+
+# --- Discord Webhooks (optional) ---
+discord_webhook_general: "" # General notifications
+discord_webhook_media: ""   # Media additions/updates
+
+# --- Misc API Keys ---
+musics_api_key: ""
+
+# --- Open WebUI (AI Services) ---
+openwebui_postgres_user: "postgres"
+openwebui_postgres_password: "CHANGE_ME_openwebui_db_password"
+openwebui_postgres_db: "openwebui"
+openwebui_openrouter_api_key: ""
+openwebui_tavily_api_key: ""
+openwebui_google_api_key: ""
+openwebui_oauth_client_id: "CHANGE_ME"
+openwebui_oauth_client_secret: "CHANGE_ME"

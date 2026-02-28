@@ -1,0 +1,9 @@
+[Unit]
+Description=Emby Staging Update Service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo cp /mnt/ceph/emby/datastage/emby-master-template-light/library* /opt/embydocker/staging && sudo cp /mnt/ceph/emby/datastage/emby-master-template-light/mb.lic /opt/embydocker/staging/ && sudo cp -r /mnt/ceph/emby/datastage/emby-master-template-light/metadata /opt/embydocker/staging && sudo cp -r /mnt/ceph/emby/datastage/emby-master-template-light/plugins /opt/embydocker/staging'
+
+[Install]
+WantedBy=multi-user.target

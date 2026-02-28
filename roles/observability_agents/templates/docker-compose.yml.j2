@@ -1,0 +1,54 @@
+# Observability Agents (Log Shippers and Metric Exporters)
+# Node: {{ node_name }}
+
+services:
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    volumes:
+      - /opt/appdata/promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      # Allow Promtail to scrape Docker logs (requires docker.sock or direct volume mapping)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Allow Promtail to scrape kernel/system logs
+      - /var/log/syslog:/var/log/syslog:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    pid: host
+    ports:
+      - "9100:9100"
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    # Explicit mapping for device access to capture deep kernel container stats
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '-housekeeping_interval=10s'
+      - '-docker_only=true'
+      - '-disable_metrics=disk,network,tcp,udp,percpu,sched,process'

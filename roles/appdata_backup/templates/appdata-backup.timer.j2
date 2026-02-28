@@ -1,0 +1,11 @@
+[Unit]
+Description=Blackbeard AppData Backup Timer (04:00 AM)
+
+[Timer]
+# Run every day at 4:00 AM
+OnCalendar=*-*-* 04:00:00
+# If the machine is off during the time, run it on boot
+Persistent=true
+
+[Install]
+WantedBy=timers.target

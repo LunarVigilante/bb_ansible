@@ -1,0 +1,49 @@
+---
+# roles/lvm_extend/tasks/main.yml
+# Wipe secondary drive, extend LVM volume group, and grow XFS filesystem
+# Only runs when secondary_drive is set and != 'none'
+
+- name: Check if secondary drive is already a PV
+  ansible.builtin.command: "pvs {{ secondary_drive }}"
+  register: pv_check
+  changed_when: false
+  failed_when: false
+
+- name: Wipe secondary drive filesystem signatures
+  ansible.builtin.command: "wipefs -fa {{ secondary_drive }}"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Zero out partition table on secondary drive
+  ansible.builtin.command: "dd if=/dev/zero of={{ secondary_drive }} bs=512 count=1"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Initialize secondary drive as LVM physical volume
+  ansible.builtin.command: "pvcreate {{ secondary_drive }}"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Extend volume group vg0 with secondary drive
+  ansible.builtin.command: "vgextend vg0 {{ secondary_drive }}"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Extend logical volume to use all free space
+  ansible.builtin.command: "lvextend -l +100%FREE /dev/vg0/root"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Grow XFS filesystem
+  ansible.builtin.command: "xfs_growfs /dev/mapper/vg0-root"
+  when: pv_check.rc != 0
+  changed_when: true
+
+- name: Verify filesystem size
+  ansible.builtin.command: df -h /
+  register: df_output
+  changed_when: false
+
+- name: Display filesystem info
+  ansible.builtin.debug:
+    var: df_output.stdout_lines

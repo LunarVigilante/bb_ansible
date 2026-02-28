@@ -1,0 +1,90 @@
+---
+# roles/autoscan/tasks/main.yml
+# Deploy Autopulse via Docker Compose (share nodes only)
+# Replaces autoscan — sends targeted updates to Plex/Jellyfin/Emby
+
+- name: Create Autopulse directory
+  ansible.builtin.file:
+    path: /opt/autopulse
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Generate Autopulse password if not set
+  ansible.builtin.set_fact:
+    autopulse_password: "{{ vault_autoscan_password if vault_autoscan_password | default('') | length > 0 else lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+
+- name: Deploy Autopulse config
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: /opt/autopulse/config.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Autopulse Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/autopulse/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Autopulse
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: /opt/autopulse
+  changed_when: true
+
+- name: Deploy Autopulse multi-tenant sync script
+  ansible.builtin.template:
+    src: autopulse-sync.sh.j2
+    dest: /opt/autopulse/sync.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy Autopulse sync systemd service
+  ansible.builtin.template:
+    src: autopulse-sync.service.j2
+    dest: /etc/systemd/system/autopulse-sync.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Autopulse sync systemd timer
+  ansible.builtin.template:
+    src: autopulse-sync.timer.j2
+    dest: /etc/systemd/system/autopulse-sync.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start Autopulse sync timer
+  ansible.builtin.systemd:
+    name: autopulse-sync.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Run initial Autopulse sync immediately
+  ansible.builtin.command: /opt/autopulse/sync.sh
+  register: sync_output
+  changed_when: "'Updating Autopulse' in sync_output.stdout"
+
+- name: Display Autopulse credentials
+  ansible.builtin.debug:
+    msg: |
+      ┌──────────────────────────────────────────────────────────┐
+      │  Autopulse deployed on port {{ autopulse_port }}         │
+      │  Username: {{ node_name }}                               │
+      │  Password: {{ autopulse_password }}                      │
+      │                                                          │
+      │  API: http://{{ node_ip }}:{{ autopulse_port }}           │
+      │  Docs: https://autopulse.dancodes.online/                │
+      │                                                          │
+      │  Sync Script: /opt/autopulse/sync.sh (runs every 5m)     │
+      │  Auto-configured {{ sync_output.stdout | regex_findall('plex-user|emby-user|jellyfin-user') | length | default('0') }} containers on initial run.  │
+      └──────────────────────────────────────────────────────────┘
+  when: vault_autoscan_password | default('') | length == 0

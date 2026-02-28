@@ -1,0 +1,63 @@
+# Cluster definition for Feeder Node 02 (fdr-02)
+# ---------------------------------------------------------------------------
+# Purpose: Media management, metadata indexing, API requests
+# Heavy Database / CPU Node
+# ---------------------------------------------------------------------------
+
+sonarr_instances:
+  - name: sonarr-v3
+  - name: sonarr-anime
+  - name: sonarr-4k
+  - name: sonarr
+
+radarr_instances:
+  - name: radarr-4k-remux
+  - name: radarr-remux
+  - name: radarr-anime
+  - name: radarr-4k
+  - name: radarr
+
+bazarr_instances:
+  - name: bazarr-4k-remux
+  - name: bazarr-remux
+  - name: bazarr-4k
+  - name: bazarr
+
+readarr_instances:
+  - name: readarr-audio
+  - name: readarr
+
+lidarr_instances:
+  - name: lidarr
+
+mylar_instances:
+  - name: mylar3
+
+prowlarr_instances:
+  - name: prowlarr
+
+flaresolverr_instances:
+  - name: flaresolverr
+
+seerr_instances:
+  - name: seerr
+
+doplarr_instances:
+  - name: doplarr
+
+huntarr_instances:
+  - name: huntarr
+
+autoscan_instances:
+  - name: autoscan-bmcm-01
+  - name: autoscan-sh-01
+  - name: autoscan-gscan
+  - name: autoscan-bbm
+  - name: autoscan-meta
+  - name: autoscan
+
+notifiarr_instances:
+  - name: notifiarr
+
+mkvtoolnix_instances:
+  - name: mkvtoolnix

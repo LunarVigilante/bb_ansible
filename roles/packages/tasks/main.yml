@@ -1,0 +1,66 @@
+---
+# roles/packages/tasks/main.yml
+# Install system packages via pacman (Arch) or apt (Ubuntu), then bootstrap yay for AUR
+
+- name: Update system and install packages (Arch)
+  community.general.pacman:
+    name: "{{ arch_packages }}"
+    state: present
+    update_cache: true
+    upgrade: true
+  when: ansible_os_family == "Archlinux"
+
+- name: Update system and install packages (Ubuntu)
+  ansible.builtin.apt:
+    name: "{{ ubuntu_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+# --- Yay (AUR helper) — Arch only ---
+
+- name: Check if yay is already installed
+  ansible.builtin.command: which yay
+  register: yay_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == "Archlinux"
+
+- name: Install yay from AUR
+  when:
+    - ansible_os_family == "Archlinux"
+    - yay_check is defined
+    - yay_check.rc != 0
+  become: true
+  become_user: admin
+  block:
+    - name: Clone yay-bin repository
+      ansible.builtin.git:
+        repo: https://aur.archlinux.org/yay-bin.git
+        dest: /tmp/yay-bin
+        version: master
+
+    - name: Build and install yay
+      ansible.builtin.command:
+        cmd: makepkg -si --noconfirm
+        chdir: /tmp/yay-bin
+      changed_when: true
+
+    - name: Clean up yay build directory
+      ansible.builtin.file:
+        path: /tmp/yay-bin
+        state: absent
+
+- name: Install AUR packages via yay (Arch)
+  ansible.builtin.command:
+    cmd: "yay -S {{ item }} --noconfirm --needed"
+  loop: "{{ aur_packages }}"
+  become: true
+  become_user: admin
+  register: yay_result
+  changed_when: "'installing' in yay_result.stdout or 'upgrading' in yay_result.stdout"
+  when:
+    - ansible_os_family == "Archlinux"
+    - yay_check is defined
+    - yay_check.rc is defined

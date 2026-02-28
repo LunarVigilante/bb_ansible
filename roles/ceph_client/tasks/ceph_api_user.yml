@@ -1,0 +1,85 @@
+---
+# roles/ceph_client/tasks/ceph_api_user.yml
+# Create a Ceph user via the Ceph Dashboard REST API and export the keyring
+
+- name: Check if Ceph keyring already exists
+  ansible.builtin.stat:
+    path: "/etc/ceph/ceph.client.{{ node_name }}.keyring"
+  register: ceph_keyring_stat
+
+- name: Create Ceph user via REST API
+  when: not ceph_keyring_stat.stat.exists
+  block:
+    - name: Authenticate to Ceph Dashboard
+      ansible.builtin.uri:
+        url: "{{ vault_ceph_dashboard_url }}/api/auth"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ vault_ceph_dashboard_user }}"
+          password: "{{ vault_ceph_dashboard_password }}"
+        validate_certs: false
+        status_code: 201
+      register: ceph_auth
+      no_log: true
+
+    - name: Set JWT token fact
+      ansible.builtin.set_fact:
+        ceph_jwt: "{{ ceph_auth.json.token }}"
+      no_log: true
+
+    - name: Create Ceph user with capabilities
+      ansible.builtin.uri:
+        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user"
+        method: POST
+        body_format: json
+        headers:
+          Authorization: "Bearer {{ ceph_jwt }}"
+          Accept: "application/vnd.ceph.api.v1.0+json"
+          Content-Type: "application/json"
+        body:
+          user_entity: "client.{{ node_name }}"
+          capabilities:
+            mds: >-
+              allow r fsname=cephfs path=/ network {{ node_ip }}/32,
+              allow r fsname=plexfs path=/ network {{ node_ip }}/32,
+              allow r fsname=embyfs path=/ network {{ node_ip }}/32,
+              {% if node_type in ['share', 'appbox'] %}
+              allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32
+              {% else %}
+              allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32
+              {% endif %}
+            mon: >-
+              allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32
+            osd: >-
+              {% if node_type in ['share', 'appbox'] %}
+              allow r tag cephfs data=cephfs network {{ node_ip }}/32,
+              {% else %}
+              allow rw tag cephfs data=cephfs network {{ node_ip }}/32,
+              {% endif %}
+              allow r tag cephfs data=embyfs network {{ node_ip }}/32,
+              allow r tag cephfs data=plexfs network {{ node_ip }}/32,
+              allow rwx tag cephfs data=bbfs network {{ node_ip }}/32
+        validate_certs: false
+        status_code: [200, 201]
+      register: ceph_user_create
+
+    - name: Export Ceph user keyring
+      ansible.builtin.uri:
+        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.{{ node_name }}/export"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ceph_jwt }}"
+          Accept: "application/vnd.ceph.api.v1.0+json"
+        validate_certs: false
+        status_code: 200
+        return_content: true
+      register: ceph_keyring_export
+
+    - name: Write Ceph keyring to file
+      ansible.builtin.copy:
+        content: "{{ ceph_keyring_export.content }}"
+        dest: "/etc/ceph/ceph.client.{{ node_name }}.keyring"
+        owner: root
+        group: root
+        mode: "0600"

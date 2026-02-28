@@ -1,0 +1,55 @@
+---
+# roles/diun/tasks/main.yml
+# Dockwatch — Docker Container Update Management & Notifications
+#
+# Replaces Diun — provides a beautiful web UI for:
+# - Monitoring containers for image updates
+# - Per-container update scheduling (cron)
+# - Auto-update, ignore, or check-only modes
+# - Notifications via Telegram, Mattermost, Notifiarr
+# - Multi-instance linking for managing multiple servers
+# - Mass prune orphan images, volumes, networks
+# - Interactive container shell via web UI
+#
+# All configuration is done through the web UI after deployment.
+
+- name: Create Dockwatch directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/dockwatch
+    - /opt/dockwatch/data
+
+- name: Deploy Dockwatch Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/dockwatch/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Dockwatch
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: /opt/dockwatch
+  changed_when: true
+
+- name: Display Dockwatch info
+  ansible.builtin.debug:
+    msg: |
+      ┌──────────────────────────────────────────────────────────┐
+      │  Dockwatch deployed on port {{ dockwatch_port }}         │
+      │                                                          │
+      │  Web UI: http://{{ node_ip }}:{{ dockwatch_port }}       │
+      │                                                          │
+      │  All configuration is done through the web UI:           │
+      │    - Set up notifications (Telegram, Mattermost, etc.)   │
+      │    - Configure per-container update schedules            │
+      │    - Link other Dockwatch instances for multi-server     │
+      │                                                          │
+      │  Docs: https://dockwatch.wiki                            │
+      └──────────────────────────────────────────────────────────┘

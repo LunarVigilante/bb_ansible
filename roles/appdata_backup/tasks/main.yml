@@ -1,0 +1,42 @@
+---
+# roles/appdata_backup/tasks/main.yml
+# Deploy automated backup scripts and systemd timers to export container configurations to Ceph
+
+- name: Create backup script directory
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy automated backup script
+  ansible.builtin.template:
+    src: appdata-backup.sh.j2
+    dest: /usr/local/bin/appdata-backup.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy backup systemd service
+  ansible.builtin.template:
+    src: appdata-backup.service.j2
+    dest: /etc/systemd/system/appdata-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy backup systemd timer
+  ansible.builtin.template:
+    src: appdata-backup.timer.j2
+    dest: /etc/systemd/system/appdata-backup.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start backup timer
+  ansible.builtin.systemd:
+    name: appdata-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

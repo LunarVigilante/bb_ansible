@@ -1,0 +1,46 @@
+# Beszel Agent — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+  beszel-agent:
+    image: henrygd/beszel-agent:{{ beszel_version }}
+    container_name: beszel-agent
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    network_mode: host
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      LISTEN: "{{ beszel_agent_port }}"
+      KEY: "{{ beszel_hub_key }}"
+{% if beszel_hub_url | default('') | length > 0 %}
+      HUB_URL: "{{ beszel_hub_url }}"
+{% endif %}
+      PRIMARY_SENSOR: "{{ beszel_primary_sensor }}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/beszel/data:/var/lib/beszel-agent
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+{% if ansible_facts['mounts'] | selectattr('mount', 'match', '/mnt/ceph') | list | length > 0 %}
+      # Monitor Ceph storage
+      - /mnt/ceph/.beszel:/extra-filesystems/ceph:ro
+{% endif %}
+{% for mount in ansible_facts['mounts'] if mount.mount | regex_search('^/mnt/') and mount.mount != '/mnt/ceph' %}
+      # Monitor {{ mount.mount }}
+      - {{ mount.mount }}/.beszel:/extra-filesystems/{{ mount.device | basename }}:ro
+{% endfor %}
+{% if beszel_detected_devices | default([]) | length > 0 %}
+    devices:
+{% for dev in beszel_detected_devices %}
+      - {{ dev }}:{{ dev }}
+{% endfor %}
+{% endif %}
+    labels:
+      - "autoheal=true"
+    healthcheck:
+      test: ["CMD-SHELL", "ss -tlnp | grep -q {{ beszel_agent_port }}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

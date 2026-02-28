@@ -1,0 +1,9 @@
+[Unit]
+Description=Kronos API Extraction and Autopulse Sync
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/autopulse/sync.sh
+User=root

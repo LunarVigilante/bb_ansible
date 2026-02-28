@@ -1,0 +1,9 @@
+[Unit]
+Description=Plex Deployment Copy Service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo cp /mnt/ceph/plex/deployment.tar.gz /opt/plexdocker/deployment.tar.gz'
+
+[Install]
+WantedBy=multi-user.target

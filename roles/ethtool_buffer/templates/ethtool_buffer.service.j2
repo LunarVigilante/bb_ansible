@@ -1,0 +1,10 @@
+[Unit]
+Description=Adjust Network Ring Buffer to Maximum
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/scripts/ethtool_buffer.sh
+
+[Install]
+WantedBy=multi-user.target

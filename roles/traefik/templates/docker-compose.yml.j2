@@ -1,0 +1,78 @@
+# Traefik Reverse Proxy — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+
+services:
+  traefik:
+    image: traefik:{{ traefik_version }}
+    container_name: traefik
+    restart: always
+    networks:
+{% for net in docker_networks %}
+      - {{ net.name }}
+{% endfor %}
+    command:
+      - "--global.sendanonymoususage=false"
+      - "--experimental.plugins.crowdsec-bouncer.moduleName=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      - "--experimental.plugins.crowdsec-bouncer.version=v1.4.1"
+      - "--providers.file.directory=/etc/traefik"
+      - "--providers.file.watch=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.internal.address=:8080"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.middlewares=crowdsec-bouncer@file"
+      - "--entrypoints.web.transport.respondingTimeouts.readTimeout=600"
+      - "--entrypoints.web.transport.respondingTimeouts.writeTimeout=0"
+      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=180"
+      - "--entrypoints.web.http.maxheaderbytes=1048576"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.middlewares=crowdsec-bouncer@file"
+      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=600"
+      - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=0"
+      - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=180"
+      - "--entrypoints.websecure.http.maxheaderbytes=1048576"
+      - "--entrypoints.websecure.http.tls.certResolver=letsEncrypt"
+{% for domain in traefik_domains %}
+      - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].main={{ domain.main }}"
+      - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].sans=*.{{ domain.main }}"
+{% endfor %}
+      - "--api.dashboard=false"
+      - "--api=false"
+      - "--log.level=ERROR"
+      - "--log.filePath=/etc/traefik/traefik.log"
+      - "--log.maxsize=10"
+      - "--log.maxbackups=3"
+      - "--log.maxage=3"
+      - "--log.compress=true"
+      - "--log.nocolor=true"
+      - "--accesslog=true"
+      - "--accesslog.fields.names.StartUTC=drop"
+      - "--accesslog.fields.headers.names.User-Agent=keep"
+      - "--accesslog.fields.headers.names.Content-Type=keep"
+      - "--accesslog.filepath=/etc/traefik/access.log"
+      - "--accesslog.bufferingsize=100"
+      - "--certificatesresolvers.letsEncrypt.acme.storage=/etc/traefik/acme.json"
+      - "--certificatesresolvers.letsEncrypt.acme.dnsChallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsEncrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+    environment:
+      CF_API_EMAIL: "{{ vault_cf_email }}"
+      CF_DNS_API_TOKEN: "{{ vault_cf_api_token }}"
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "443:443/udp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/traefik:/etc/traefik:rw
+    labels:
+      - "traefik.enable=false"
+      - "autoheal=true"
+
+networks:
+{% for net in docker_networks %}
+  {{ net.name }}:
+    external: true
+{% endfor %}

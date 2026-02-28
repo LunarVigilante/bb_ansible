@@ -1,0 +1,41 @@
+---
+# roles/app_services/tasks/main.yml
+# Deploy unique utility services (Nextcloud, Vaultwarden, Homepage, etc.)
+
+- name: Create base appdata directories for services
+  ansible.builtin.file:
+    path: "/opt/appdata/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - nextcloud
+    - vaultwarden
+    - audiobookshelf
+    - homepage
+    - uptime-kuma
+    - speedtest
+    - kavita
+
+- name: Create app_services compose directory
+  ansible.builtin.file:
+    path: /opt/compose/app_services
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy app_services Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/app_services/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start app_services
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/app_services
+  changed_when: true

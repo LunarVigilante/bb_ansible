@@ -1,0 +1,7 @@
+# User config files (contain secrets — never commit)
+accounts.yml
+settings.yml
+
+# Ansible artifacts
+*.retry
+*.bak

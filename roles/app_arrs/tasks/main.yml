@@ -1,0 +1,35 @@
+---
+# roles/app_arrs/tasks/main.yml
+# Deploy Arr ecosystem applications (Sonarr, Radarr, Readarr, Lidarr, Bazarr, Prowlarr, Mylar3)
+
+- name: Create base appdata directories for Arr apps
+  ansible.builtin.file:
+    path: "/opt/appdata/{{ item.name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ sonarr_instances | default([]) + radarr_instances | default([]) + readarr_instances | default([]) + lidarr_instances | default([]) + bazarr_instances | default([]) + prowlarr_instances | default([]) + mylar_instances | default([]) + seerr_instances | default([]) + huntarr_instances | default([]) + doplarr_instances | default([]) + flaresolverr_instances | default([]) }}"
+  when: item.name is defined
+
+- name: Create app_arrs compose directory
+  ansible.builtin.file:
+    path: /opt/compose/app_arrs
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy app_arrs Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/app_arrs/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start app_arrs
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/app_arrs
+  changed_when: true

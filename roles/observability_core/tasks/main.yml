@@ -1,0 +1,75 @@
+---
+# roles/observability_core/tasks/main.yml
+# Deploy the central PLG stack (Prometheus, Loki, Grafana) on the Service Node
+
+- name: Create base directories for observability core
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/appdata/grafana
+    - /opt/appdata/grafana/provisioning/datasources
+    - /opt/appdata/grafana/provisioning/dashboards
+    - /opt/appdata/loki
+    - /opt/appdata/prometheus
+    - /opt/compose/observability_core
+
+- name: Deploy Loki config
+  ansible.builtin.template:
+    src: loki-config.yaml.j2
+    dest: /opt/appdata/loki/local-config.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /opt/appdata/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Grafana datasources provisioning
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: /opt/appdata/grafana/provisioning/datasources/datasources.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Grafana dashboards provisioning
+  ansible.builtin.template:
+    src: grafana-dashboards.yml.j2
+    dest: /opt/appdata/grafana/provisioning/dashboards/dashboards.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Download standard Grafana dashboards
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "/opt/appdata/grafana/provisioning/dashboards/{{ item.name }}.json"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { name: 'node-exporter-full', url: 'https://grafana.com/api/dashboards/1860/revisions/37/download' }
+    - { name: 'docker-container-stats', url: 'https://grafana.com/api/dashboards/14282/revisions/7/download' }
+
+- name: Deploy Observability Core Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/observability_core/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Observability Core
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/observability_core
+  changed_when: true

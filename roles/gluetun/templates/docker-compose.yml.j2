@@ -1,0 +1,31 @@
+# Gluetun VPN — Managed by Blackbeard Ansible
+# Node: {{ node_name }} (Plex only)
+
+services:
+  gluetun:
+    image: qmcgaw/gluetun:{{ gluetun_version }}
+    container_name: gluetun
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER={{ gluetun_vpn_provider }}
+      - VPN_TYPE={{ gluetun_vpn_type }}
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/gluetun:/gluetun
+    ports:
+      # Expose ports for containers routing through the VPN
+      - "8888:8888/tcp"    # HTTP proxy
+      - "8388:8388/tcp"    # Shadowsocks TCP
+      - "8388:8388/udp"    # Shadowsocks UDP
+    labels:
+      - "autoheal=true"
+    healthcheck:
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
