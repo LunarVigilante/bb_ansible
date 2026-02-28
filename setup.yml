@@ -29,7 +29,6 @@
     - name: Set derived variables
       ansible.builtin.set_fact:
         node_ip: "{{ ansible_default_ipv4.address }}"
-        has_secondary_drive: "{{ secondary_drive != 'none' }}"
         is_plex: "{{ media_service == 'plex' }}"
         is_emby: "{{ media_service == 'emby' }}"
         is_jellyfin: "{{ media_service == 'jellyfin' }}"
@@ -141,7 +140,6 @@
 
     - role: lvm_extend
       tags: ['lvm']
-      when: has_secondary_drive | bool
 
     - role: ethtool_buffer
       tags: ['ethtool']

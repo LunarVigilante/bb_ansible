@@ -23,8 +23,10 @@ node_type: "appbox"
 # Is this a 10Gbps node? (true/false)
 is_10g_node: false
 
-# --- Settings ---
-# Storage: Comma-separated list of drives to insulate from auto-wipe (e.g., "sda,sdb")
+# --- Storage ---
+# LVM auto-discovery will find and absorb ALL unused drives into the root VG.
+# To protect specific drives from being wiped, list them here (comma-separated, no /dev/ prefix).
+# Example: "sda,nvme2n1" would insulate those two drives.
 lvm_ignore_drives: ""
 
 # --- Emby Settings ---
