@@ -59,9 +59,8 @@ detect_os() {
 # --- Install dependencies ---
 install_deps_arch() {
     log_info "Installing dependencies via pacman..."
-    pacman -Syu --noconfirm --needed \
-        ansible git python python-pip python-passlib python-jmespath \
-        community-general-docs nano vim 2>/dev/null || true
+    pacman -Sy --noconfirm --needed \
+        ansible git python nano vim
     # Install community.docker collection
     ansible-galaxy collection install community.general community.docker --force 2>/dev/null || true
 }
