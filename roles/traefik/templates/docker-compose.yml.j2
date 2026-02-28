@@ -17,6 +17,7 @@ services:
       - "--providers.file.directory=/etc/traefik"
       - "--providers.file.watch=true"
       - "--providers.docker=true"
+      - "--providers.docker.endpoint=tcp://socket-proxy-traefik:2375"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.internal.address=:8080"
       - "--entrypoints.web.address=:80"
@@ -65,7 +66,6 @@ services:
       - "443:443/tcp"
       - "443:443/udp"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /opt/traefik:/etc/traefik:rw
     labels:
       - "traefik.enable=false"

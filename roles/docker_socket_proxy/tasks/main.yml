@@ -1,0 +1,25 @@
+---
+# roles/docker_socket_proxy/tasks/main.yml
+# Deploys minimal-privilege algorithmic firewalls between critical internet-facing edges and the host Docker daemon.
+
+- name: Create docker_socket_proxy directory
+  ansible.builtin.file:
+    path: /opt/docker_socket_proxy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy docker-socket-proxy Docker Compose configuration
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/docker_socket_proxy/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Start docker-socket-proxy stack
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: /opt/docker_socket_proxy
+  changed_when: true

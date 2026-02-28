@@ -1,0 +1,57 @@
+# Zero-Trust Docker Socket Proxies — Managed by Blackbeard Ansible
+# Node: {{ node_name }}
+# Algorithmic firewalls strictly limiting what internal edge containers can execute on the Docker Daemon.
+
+services:
+
+  # ═══ Traefik Edge Proxy (Strict Read-Only) ═══
+  socket-proxy-traefik:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: socket-proxy-traefik
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    environment:
+      # Traefik strictly needs to GET configuration states mapping to exposed ports.
+      - CONTAINERS=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      # Hard drop all write/escalation requests
+      - POST=0
+      - PUT=0
+      - DELETE=0
+      - AUTH=0
+      - BUILD=0
+      - EXEC=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+
+  # ═══ Dockwatch Updater (Restricted Read-Write) ═══
+  socket-proxy-dockwatch:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: socket-proxy-dockwatch
+    restart: unless-stopped
+    cgroup_parent: system.slice
+    environment:
+      # Dockwatch requires visibility into state layers to calculate hashes
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - INFO=1
+      # Dockwatch specifically needs to trigger pulls, stops, creations, and pruning
+      - POST=1
+      - DELETE=1
+      # Hard drop extreme escalations not mathematically required for image updates
+      - AUTH=0
+      - BUILD=0
+      - EXEC=0
+      - SWARM=0
+      - SECRETS=0
+      - PLUGINS=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy

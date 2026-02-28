@@ -144,6 +144,9 @@
     - role: docker
       tags: ['docker']
 
+    - role: docker_socket_proxy
+      tags: ['security', 'core']
+
     # ═══ Security & Observability Roles ═══
     - role: crowdsec
       tags: ['crowdsec']
