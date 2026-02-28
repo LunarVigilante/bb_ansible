@@ -152,7 +152,13 @@ set_val "accounts.yml" "bazarr_api_key" "${BB_BAZARR_API_KEY:-}"
 set_val "accounts.yml" "beszel_hub_url" "${BB_BESZEL_HUB_URL:-}"
 set_val "accounts.yml" "beszel_hub_key" "${BB_BESZEL_HUB_KEY:-}"
 set_val "accounts.yml" "crowdsec_enroll_key" "${BB_CROWDSEC_ENROLL_KEY:-}"
-set_val "accounts.yml" "crowdsec_traefik_bouncer_key" "${BB_CROWDSEC_TRAEFIK_BOUNCER_KEY:-}"
+
+if [[ -z "${BB_CROWDSEC_TRAEFIK_BOUNCER_KEY:-}" || "${BB_CROWDSEC_TRAEFIK_BOUNCER_KEY:-}" == "CHANGE_ME"* ]]; then
+    BB_CROWDSEC_TRAEFIK_BOUNCER_KEY="$(openssl rand -hex 16)"
+    log_info "Auto-generated secure password for CrowdSec Traefik Bouncer"
+fi
+set_val "accounts.yml" "crowdsec_traefik_bouncer_key" "${BB_CROWDSEC_TRAEFIK_BOUNCER_KEY}"
+
 set_val "accounts.yml" "discord_webhook_general" "${BB_DISCORD_WEBHOOK_GENERAL:-}"
 set_val "accounts.yml" "discord_webhook_media" "${BB_DISCORD_WEBHOOK_MEDIA:-}"
 
