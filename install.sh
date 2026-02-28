@@ -3,7 +3,7 @@
 # BB Ansible — Bootstrap Install Script
 # =============================================================================
 # Usage:
-#   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
+#   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
 #
 # This script:
 #   1. Detects OS (Arch Linux / Ubuntu)
@@ -61,7 +61,7 @@ detect_os() {
 # --- Install dependencies ---
 install_deps_arch() {
     log_info "Installing dependencies via pacman..."
-    pacman -Sy --noconfirm --needed ansible-core git python python-passlib nano vim
+    pacman -Sy --noconfirm --needed ansible-core git python python-passlib sudo nano vim
     
     # Force shell to recognize new binaries immediately
     hash -r || true
@@ -73,7 +73,7 @@ install_deps_arch() {
 install_deps_ubuntu() {
     log_info "Installing dependencies via apt..."
     apt-get update -qq
-    apt-get install -y -qq software-properties-common git python3 python3-pip python3-passlib nano vim
+    apt-get install -y -qq software-properties-common git python3 python3-pip python3-passlib sudo nano vim
     # Add Ansible PPA if not present
     if ! command -v ansible &> /dev/null; then
         add-apt-repository --yes ppa:ansible/ansible

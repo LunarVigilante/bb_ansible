@@ -60,9 +60,10 @@ You must establish the identity core (Authentik) first, as all other nodes will 
 
 1. Install a fresh OS (Debian/Arch) on your Service hardware.
 2. Ensure your properly configured `.env` file is present in your current directory. 
-3. Become root and run the bootstrap installer:
+3. Run the bootstrap installer as root:
    ```bash
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
+   # Must be run as root (fresh Hetzner servers don't have sudo)
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
    ```
 4. Execute the deployment:
    ```bash
@@ -81,9 +82,9 @@ Now that SSO is online, spin up the download engine.
    nano .env
    # Change to: BB_NODE_TYPE=feeder
    ```
-4. Become root and run the bootstrap installer:
+4. Run the bootstrap installer as root:
    ```bash
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
    ```
 5. Deploy the stack: 
    ```bash
@@ -103,9 +104,9 @@ Finally, generate edge nodes for users to consume the media.
    # Change to: BB_NODE_TYPE=appbox   (or share)
    # Change to: BB_MEDIA_SERVICE=plex (or emby, jellyfin)
    ```
-4. Become root and run the bootstrap installer:
+4. Run the bootstrap installer as root:
    ```bash
-   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | sudo bash
+   curl -sL https://raw.githubusercontent.com/LunarVigilante/bb_ansible/main/install.sh | bash
    ```
 5. Deploy the stack:
    ```bash
