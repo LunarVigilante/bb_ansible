@@ -8,21 +8,56 @@ http:
 
     security-headers:
       headers:
+        # ═══ Core Security Headers ═══
         # Prevent MIME sniffing
         contentTypeNosniff: true
-        # Block rendering in iframes (clickjacking protection)
+        # Block rendering in iframes (clickjacking / CSRF protection)
         frameDeny: true
         # Enable XSS protection filter
         browserXssFilter: true
         # Referrer policy to minimize data leakage
         referrerPolicy: "strict-origin-when-cross-origin"
-        # Force HTTPS via Strict-Transport-Security (1 year + subdomains)
+
+        # ═══ HTTPS Enforcement (HSTS) ═══
+        # Force HTTPS via Strict-Transport-Security (1 year + subdomains + preload)
         stsSeconds: 31536000
         stsIncludeSubdomains: true
         stsPreload: true
-        # Restrict embedded content origins
-        contentSecurityPolicy: "frame-ancestors 'self'"
-        # Prevent information leakage
+
+        # ═══ Content Security Policy ═══
+        # Restricts script/style/img/font sources; blocks unsafe-inline by default
+        # Applications that require inline scripts must override at the container label level
+        contentSecurityPolicy: >-
+          default-src 'self';
+          script-src 'self';
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data: https:;
+          font-src 'self' data:;
+          connect-src 'self' wss: https:;
+          frame-ancestors 'self';
+          base-uri 'self';
+          form-action 'self';
+          object-src 'none';
+          upgrade-insecure-requests
+
+        # ═══ Permissions Policy ═══
+        # Restrict browser features that are not needed by media infrastructure
+        permissionsPolicy: >-
+          camera=(),
+          microphone=(),
+          geolocation=(),
+          payment=(),
+          usb=(),
+          magnetometer=(),
+          gyroscope=(),
+          accelerometer=()
+
+        # ═══ Cross-Origin Isolation ═══
         customResponseHeaders:
+          # Prevent information leakage
           X-Powered-By: ""
           Server: ""
+          # Cross-Origin policies to prevent data exfiltration
+          Cross-Origin-Opener-Policy: "same-origin"
+          Cross-Origin-Resource-Policy: "same-origin"
+
