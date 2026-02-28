@@ -89,8 +89,17 @@
     - name: Validate node_type
       ansible.builtin.assert:
         that:
-          - node_type in ['share', 'appbox', 'baremetal']
-        fail_msg: "Invalid node_type '{{ node_type }}'. Must be share, appbox, or baremetal."
+          - node_type in ['share', 'appbox', 'baremetal', 'service', 'feeder']
+        fail_msg: "Invalid node_type '{{ node_type }}'. Must be share, appbox, baremetal, service, or feeder."
+      tags: ['always']
+
+    - name: Validate base_domain format
+      ansible.builtin.assert:
+        that:
+          - base_domain is defined
+          - base_domain | length > 0
+          - base_domain is regex('^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$')
+        fail_msg: "Invalid base_domain '{{ base_domain }}'. Must be a valid FQDN (e.g. example.com)."
       tags: ['always']
 
     - name: Display configuration summary

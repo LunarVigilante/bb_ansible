@@ -6,7 +6,7 @@
 # configuration templates to allow for zero-touch headless provisioning.
 # =============================================================================
 
-set -e
+set -euo pipefail
 
 BB_DIR="$(cd "$(dirname "$(readlink -f "$0" || readlink "$0" || echo "$0")")/.." && pwd)"
 ENV_FILE="${BB_DIR}/.env"
@@ -42,10 +42,14 @@ set_val() {
     # Don't overwrite if input val is practically empty, unless it's a specific generation scenario
     if [[ -z "${val}" ]]; then return; fi
 
+    # Sanitize: escape pipe characters in the value to prevent sed delimiter injection
+    local safe_val
+    safe_val=$(printf '%s' "${val}" | sed 's/|/\\|/g')
+
     if [[ "${is_bool}" == "true" ]]; then
-        sed -i "s|^${key}:.*|${key}: ${val}|" "${BB_DIR}/${file}"
+        sed -i "s|^${key}:.*|${key}: ${safe_val}|" "${BB_DIR}/${file}"
     else
-        sed -i "s|^${key}:.*|${key}: \"${val}\"|" "${BB_DIR}/${file}"
+        sed -i "s|^${key}:.*|${key}: \"${safe_val}\"|" "${BB_DIR}/${file}"
     fi
 }
 
@@ -112,6 +116,9 @@ set_val "settings.yml" "lvm_ignore_drives" "${BB_LVM_IGNORE_DRIVES:-}"
 if [[ -z "${BB_ADMIN_PASSWORD:-}" || "${BB_ADMIN_PASSWORD:-}" == *"CHANGE_ME"* ]]; then
     BB_ADMIN_PASSWORD="$(openssl rand -hex 16)"
     log_info "Auto-generated secure root OS password for 'admin' user"
+elif [[ ${#BB_ADMIN_PASSWORD} -lt 8 ]]; then
+    log_warn "BB_ADMIN_PASSWORD is shorter than 8 characters. Overriding with a secure random password."
+    BB_ADMIN_PASSWORD="$(openssl rand -hex 16)"
 fi
 set_val "accounts.yml" "admin_password" "${BB_ADMIN_PASSWORD}"
 
