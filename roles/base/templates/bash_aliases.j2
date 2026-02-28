@@ -1,0 +1,15 @@
+# ~/.bash_aliases
+
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias pau='ps aux --sort -%cpu | head -5'
+alias uc='docker ps --format "{{ "{{.ID}}: {{.Names}}" }}" --filter "status=running"'
+alias psql="/opt/scripts/plexmediaserver/'Plex SQLite'"
+alias gslog="tail -n 200 /opt/gscan/gscan.log"
+alias q="cat /opt/gscan/dbq.txt"
+alias q2="cat /opt/gscan/dbq2.txt"
+alias gslog2="tail -n 300 /opt/gscan/gscan2.log"
+alias alog="tail -n 300 /opt/autoscan/activity.log"
+alias ipt="iptables -L INPUT -v"
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'

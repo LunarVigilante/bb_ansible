@@ -1,0 +1,110 @@
+---
+# roles/base/tasks/main.yml
+# System fundamentals — runs BEFORE user creation
+# Order: identity → locale → time → prereqs → dotfiles
+
+# ═══ System Identity ═══
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ node_name }}"
+
+- name: Update /etc/hosts with node name
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1  {{ node_name }}"
+    state: present
+
+# ═══ Locale — must happen before user creation ═══
+# Fresh Arch installs from Hetzner often only have the C locale.
+# Without en_US.UTF-8, Ansible modules throw perl locale warnings
+# and password hashing can behave unexpectedly.
+
+- name: Ensure en_US.UTF-8 locale is uncommented (Arch)
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: '^#?\s*en_US\.UTF-8 UTF-8'
+    line: "en_US.UTF-8 UTF-8"
+    state: present
+  register: locale_gen_result
+  when: ansible_os_family == "Archlinux"
+
+- name: Generate locales (Arch)
+  ansible.builtin.command: locale-gen
+  changed_when: locale_gen_result.changed
+  when:
+    - ansible_os_family == "Archlinux"
+    - locale_gen_result.changed
+
+- name: Set system locale
+  ansible.builtin.copy:
+    content: |
+      LANG=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+    dest: /etc/locale.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Generate locale (Ubuntu)
+  ansible.builtin.command: locale-gen en_US.UTF-8
+  changed_when: false
+  when: ansible_os_family == "Debian"
+
+# ═══ Time ═══
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- name: Enable NTP synchronization
+  ansible.builtin.command: timedatectl set-ntp true
+  changed_when: false
+
+# ═══ Pre-requisites for user creation ═══
+
+- name: Install sudo (Arch)
+  community.general.pacman:
+    name: sudo
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+- name: Install sudo (Ubuntu)
+  ansible.builtin.apt:
+    name: sudo
+    state: present
+  when: ansible_os_family == "Debian"
+
+# ═══ Dotfiles ═══
+
+- name: Change root shell to zsh
+  ansible.builtin.user:
+    name: root
+    shell: /bin/zsh
+
+- name: Clone oh-my-zsh for root
+  ansible.builtin.git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: /root/.oh-my-zsh
+    depth: 1
+    update: true
+
+- name: Clone powerlevel10k for root
+  ansible.builtin.git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: /root/.oh-my-zsh/custom/themes/powerlevel10k
+    depth: 1
+    update: true
+
+- name: Deploy ZSH dotfiles to root
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/root/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - .zshrc
+    - .p10k.zsh
+    - .bash_aliases

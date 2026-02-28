@@ -1,0 +1,278 @@
+# =============================================================================
+# Blackbeard Media — Shared Variables
+# =============================================================================
+# These defaults apply to ALL nodes unless overridden by host_vars.
+# Secrets go in vault.yml — never store credentials here.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# SSH Authorized Keys
+# ---------------------------------------------------------------------------
+# Each entry: { name: "Label", key: "ssh-ed25519 AAAA..." }
+ssh_authorized_keys:
+  - name: "Blackbeard"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEwlw0wpmMJhmgbAkSeFDvSRAOiT7J05IZmwhgRYWE8k"
+  - name: "Glen"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFvhSJDPGgRiEI7TFopGm+rfUg9TCaJ/PX0RjFQXS8Pm"
+  - name: "Smitty"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDStcAM2o+RroZDCMdHLhVfMsy1BORhlqpqtip+UZ+8t"
+  - name: "ScottC"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA4O9p/Aq0Ga4m9OfWld1rhe3R/CodbGn/aqPxi2lL+K"
+  - name: "|3ee"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILiRhFwEq6oa12wLe9zdFnPKxj5N2X0LPKoQwdbBfMcu"
+  - name: "Kronos"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqomXyVkBa6mFy0wfST9oYih8E4UAQua5qtc1p2lRIg"
+  - name: "Saltbox Services"
+    key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQD5e32aEbtwhgVRMcr8lFn1vyvDCFHr9qSqwdRenC7gF0ZP2+7fCSg53tdPC5H/sPVVcycaY5HH9SSUKpWWeeBTQg5XjB1j5EdwySvf02b9iXbHAAMIfSh849EYne5AWKbnAziOlo/Ix4rcWV/l6Ghnup/BoS8RJRVNHQueU947nmb3A/gvXE0Ll+2ku4x/aIeOqp1TKva73gyVu49gbTB1/4A/BsxIAntWQBAnScpqSPYGv44JnFUbfuqR6YRH/6qsv4QgfFbI+OE8Tpu59jMAWE7EQv0FTSWMgJ6dcpfr6ZbDuhRd6/VFAnVT4ftJYgaQI7pUi1fJqDyqB8295NdqMYeTHsCpFpTTo6cxFongrGTrTOg/L+PqHmb/lgLhffBss/L+K0xsC6BMTZQr3wXIL4DErOPLt25gQsBEtQub1z6YopoSCupruBqpGfIG0hBDtGXDmWheCXYBFBOSQs/lUDSmAnfKGLPtxkXhReRV34lW6Vgph1hTPULBZCMjX5s="
+  - name: "Sbstn"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPB88OXfUZKJhGBisf+iByqeAfZmM8cX2vFexknhX+2y"
+
+# Keys for root-only access (subset)
+ssh_root_keys:
+  - name: "Kronos"
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMqomXyVkBa6mFy0wfST9oYih8E4UAQua5qtc1p2lRIg"
+
+# ---------------------------------------------------------------------------
+# Packages — Arch
+# ---------------------------------------------------------------------------
+# NOTE: docker, fail2ban, sudo, ipset are NOT listed here —
+#       they are installed by their own dedicated roles so they work standalone.
+arch_packages:
+  # Build & runtime
+  - base-devel
+  - git
+  - python-requests
+  # Shells & editors
+  - zsh
+  - nano
+  - screen
+  - tmux
+  # Monitoring & diagnostics
+  - btop
+  - htop
+  - glances
+  - iotop
+  - nload
+  - sysstat            # sar, iostat, mpstat — historical performance data
+  - strace             # syscall tracing for debugging
+  - lsof
+  # Disk & filesystem
+  - gdu                # fast disk usage analyzer
+  - ncdu               # ncurses disk usage (interactive)
+  - tree
+  - logrotate
+  # Networking
+  - curl
+  - wget
+  - ethtool
+  - mtr                # traceroute + ping combined
+  - speedtest-cli
+  - cifs-utils
+  # Data tools
+  - jq                 # JSON processor (essential for API/Docker scripting)
+  - sqlite3
+  - rsync
+  - unzip
+  # Health & diagnostics
+  - smartmontools        # SMART disk health (smartctl)
+  - stress-ng            # CPU/memory/disk stress testing
+  # System
+  - arch-install-scripts
+
+# Packages installed via yay (AUR)
+aur_packages:
+  - ceph-bin
+  - mergerfs
+
+# ---------------------------------------------------------------------------
+# Packages — Ubuntu (equivalent names)
+# ---------------------------------------------------------------------------
+ubuntu_packages:
+  # Build & runtime
+  - build-essential
+  - git
+  - python3-requests
+  # Shells & editors
+  - zsh
+  - nano
+  - screen
+  - tmux
+  # Monitoring & diagnostics
+  - btop
+  - htop
+  - glances
+  - iotop
+  - nload
+  - sysstat
+  - strace
+  - lsof
+  # Disk & filesystem
+  - gdu
+  - ncdu
+  - tree
+  - logrotate
+  # Networking
+  - curl
+  - wget
+  - ethtool
+  - mtr
+  - speedtest-cli
+  - cifs-utils
+  # Data tools
+  - jq
+  - sqlite3
+  - rsync
+  - unzip
+  # Health & diagnostics
+  - smartmontools
+  - stress-ng
+  # Ceph (Ubuntu has it in repos)
+  - ceph-common
+  - mergerfs
+
+# ---------------------------------------------------------------------------
+# Ceph Configuration
+# ---------------------------------------------------------------------------
+ceph_fsid: "34722624-ebcf-11ed-acd1-6cb3110970bc"
+ceph_mon_hosts: >-
+  [v2:176.9.222.189:3300/0,v1:176.9.222.189:6789/0]
+  [v2:176.9.222.187:3300/0,v1:176.9.222.187:6789/0]
+  [v2:176.9.222.249:3300/0,v1:176.9.222.249:6789/0]
+  [v2:176.9.222.246:3300/0,v1:176.9.222.246:6789/0]
+  [v2:176.9.222.228:3300/0,v1:176.9.222.228:6789/0]
+
+# CephFS names used in mount entries and user caps
+ceph_filesystems:
+  - cephfs
+  - plexfs
+  - embyfs
+
+# ---------------------------------------------------------------------------
+# System
+# ---------------------------------------------------------------------------
+timezone: "UTC"
+
+# ---------------------------------------------------------------------------
+# Docker — Base Containers
+# ---------------------------------------------------------------------------
+docker_version: "5:28.5.2"     # Ubuntu APT epoch format; Arch version pinned via IgnorePkg
+portainer_agent_version: "2.19.4"
+
+# Docker networks — all created on every node (bridge networks are free)
+docker_networks:
+  - name: plexworks
+    subnet: "172.18.0.0/16"
+    ip_range: "172.18.5.0/24"
+    gateway: "172.18.0.1"
+  - name: tauworks
+    subnet: "172.19.0.0/16"
+    ip_range: "172.19.5.0/24"
+    gateway: "172.19.0.1"
+  - name: embyworks
+    subnet: "172.30.0.0/16"
+    ip_range: "172.30.5.0/24"
+    gateway: "172.30.0.1"
+  - name: jellyworks
+    subnet: "172.40.0.0/16"
+    ip_range: "172.40.5.0/24"
+    gateway: "172.40.0.1"
+  - name: proxy
+    subnet: "172.32.0.0/16"
+    ip_range: "172.32.5.0/24"
+    gateway: "172.32.0.1"
+
+# ---------------------------------------------------------------------------
+# SSH Hardening
+# ---------------------------------------------------------------------------
+ssh_permit_root_login: "without-password"
+ssh_password_auth: "no"
+ssh_pubkey_auth: "yes"
+
+# fail2ban
+fail2ban_bantime: 3600
+fail2ban_maxretry: 4
+fail2ban_findtime: 300
+
+# ---------------------------------------------------------------------------
+# CrowdSec — Intrusion Detection
+# ---------------------------------------------------------------------------
+crowdsec_version: "latest"
+crowdsec_enroll_key: ""
+
+# ---------------------------------------------------------------------------
+# Dockwatch — Docker Container Update Management (replaces Diun)
+# ---------------------------------------------------------------------------
+dockwatch_version: "latest"
+dockwatch_port: 9154
+
+# ---------------------------------------------------------------------------
+# Beszel — Lightweight Server Monitoring
+# ---------------------------------------------------------------------------
+beszel_version: "latest"
+beszel_agent_port: "45876"
+beszel_hub_key: ""
+beszel_hub_url: ""
+beszel_primary_sensor: "coretemp_package_id_0"
+# ---------------------------------------------------------------------------
+# Traefik — Reverse Proxy
+# ---------------------------------------------------------------------------
+traefik_version: "v3.3"
+
+# TLS domains (each entry generates main + wildcard SAN)
+traefik_domains:
+  - main: "pirately.cc"
+  - main: "wyldhive.com"
+  - main: "zen-nest.org"
+  - main: "orbitfox.work"
+  - main: "purevino.uk"
+  - main: "skyforge.cc"
+
+# ---------------------------------------------------------------------------
+# Gluetun — VPN (Plex nodes)
+# ---------------------------------------------------------------------------
+gluetun_version: "latest"
+gluetun_vpn_provider: "custom"
+gluetun_vpn_type: "openvpn"
+
+# ---------------------------------------------------------------------------
+# Autopulse — Media Server Update Notifier (replaces autoscan)
+# ---------------------------------------------------------------------------
+autopulse_version: "latest"
+autopulse_port: 2875
+
+# Triggers — what sends notifications to autopulse (Sonarr, Radarr, etc.)
+# Configure per-node in host_vars or settings.yml
+# Example:
+#   autopulse_triggers:
+#     sonarr:
+#       type: sonarr
+#       rewrite:
+#         from: /downloads/tv
+#         to: /mnt/ceph/media/tv
+autopulse_triggers: {}
+
+# Targets — media servers to update (Plex, Jellyfin, Emby)
+# Example:
+#   autopulse_targets:
+#     plex:
+#       type: plex
+#       url: http://plex:32400
+#       token: your-plex-token
+autopulse_targets: {}
+
+# Webhooks — optional notifications (Discord, etc.)
+# Example:
+#   autopulse_webhooks:
+#     discord:
+#       type: discord
+#       url: https://discord.com/api/webhooks/...
+autopulse_webhooks: {}
+
+# ---------------------------------------------------------------------------
+# Authentik — Single Sign-On (SSO) Portal
+# ---------------------------------------------------------------------------
+authentik_version: "2024.12.1"
+# Which node's domain will host the auth portal:
+authentik_domain: "sso.yourdomain.com"
+authentik_port_http: 9005
+authentik_port_https: 9445

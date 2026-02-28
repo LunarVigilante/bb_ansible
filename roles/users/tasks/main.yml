@@ -1,0 +1,59 @@
+---
+# roles/users/tasks/main.yml
+# Create admin user, deploy SSH keys, configure sudoers
+# Prerequisite: base role (installs sudo)
+
+- name: Create admin user
+  ansible.builtin.user:
+    name: admin
+    shell: /bin/zsh
+    create_home: true
+    groups: "{{ 'wheel' if ansible_os_family == 'Archlinux' else 'sudo' }}"
+    append: true
+    password: "{{ vault_admin_password | password_hash('sha512', 'bb_static_salt') }}"
+    state: present
+
+- name: Create .ssh directory for admin
+  ansible.builtin.file:
+    path: /home/admin/.ssh
+    state: directory
+    owner: admin
+    group: admin
+    mode: "0700"
+
+- name: Deploy authorized_keys for admin
+  ansible.builtin.template:
+    src: authorized_keys.j2
+    dest: /home/admin/.ssh/authorized_keys
+    owner: admin
+    group: admin
+    mode: "0600"
+
+- name: Deploy authorized_keys for root
+  ansible.builtin.template:
+    src: authorized_keys_root.j2
+    dest: /root/.ssh/authorized_keys
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Ensure wheel group can sudo (Arch)
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^#?\s*%wheel\s+ALL=\(ALL(:ALL)?\)\s+ALL'
+    line: "%wheel ALL=(ALL) ALL"
+    validate: "visudo -cf %s"
+  when: ansible_os_family == "Archlinux"
+
+- name: Copy ZSH dotfiles to admin home
+  ansible.builtin.copy:
+    src: "/root/{{ item }}"
+    dest: "/home/admin/{{ item }}"
+    owner: admin
+    group: admin
+    remote_src: true
+  loop:
+    - .zshrc
+    - .p10k.zsh
+    - .bash_aliases
+    - .oh-my-zsh

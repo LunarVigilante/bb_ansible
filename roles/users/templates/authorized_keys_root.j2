@@ -1,0 +1,5 @@
+{% for key in ssh_root_keys %}
+# {{ key.name }}
+{{ key.key }}
+
+{% endfor %}
