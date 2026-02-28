@@ -392,7 +392,7 @@ do_install() {
 
     cd "${BB_DIR}"
 
-    ansible-playbook setup.yml \
+    /usr/bin/ansible-playbook setup.yml \
         --tags "${tags}" \
         "$@" \
         2>&1 | tee "${log_file}"
