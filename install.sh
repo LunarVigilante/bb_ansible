@@ -104,7 +104,8 @@ create_configs() {
 
     if [[ ! -f "${INSTALL_DIR}/accounts.yml" ]]; then
         cp "${INSTALL_DIR}/accounts.yml.default" "${INSTALL_DIR}/accounts.yml"
-        log_warn "Created accounts.yml — EDIT THIS FILE with your credentials!"
+        chmod 600 "${INSTALL_DIR}/accounts.yml"
+        log_warn "Created accounts.yml (locked 0600) — EDIT THIS FILE with your credentials!"
         first_install="true"
     else
         log_ok "accounts.yml already exists, skipping."
@@ -112,7 +113,8 @@ create_configs() {
 
     if [[ ! -f "${INSTALL_DIR}/settings.yml" ]]; then
         cp "${INSTALL_DIR}/settings.yml.default" "${INSTALL_DIR}/settings.yml"
-        log_warn "Created settings.yml — EDIT THIS FILE with your node settings!"
+        chmod 600 "${INSTALL_DIR}/settings.yml"
+        log_warn "Created settings.yml (locked 0600) — EDIT THIS FILE with your node settings!"
     else
         log_ok "settings.yml already exists, skipping."
     fi

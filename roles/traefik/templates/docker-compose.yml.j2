@@ -36,6 +36,8 @@ services:
       - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=180"
       - "--entrypoints.websecure.http.maxheaderbytes=1048576"
       - "--entrypoints.websecure.http.tls.certResolver=letsEncrypt"
+      - "--entrypoints.websecure.http.tls.options=default"
+      - "--tls.options.default.minVersion=VersionTLS12"
 {% for domain in traefik_domains %}
       - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].main={{ domain.main }}"
       - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].sans=*.{{ domain.main }}"
@@ -55,6 +57,7 @@ services:
       - "--accesslog.fields.headers.names.Content-Type=keep"
       - "--accesslog.filepath=/etc/traefik/access.log"
       - "--accesslog.bufferingsize=100"
+      - "--accesslog.fields.names.ClientHost=drop"
       - "--certificatesresolvers.letsEncrypt.acme.storage=/etc/traefik/acme.json"
       - "--certificatesresolvers.letsEncrypt.acme.dnsChallenge.provider=cloudflare"
       - "--certificatesresolvers.letsEncrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,8.8.8.8:53"

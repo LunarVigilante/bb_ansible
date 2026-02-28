@@ -24,6 +24,7 @@
     owner: root
     group: root
     mode: "0600"
+  no_log: true
 
 - name: Deploy Authentik Docker Compose
   ansible.builtin.template:
