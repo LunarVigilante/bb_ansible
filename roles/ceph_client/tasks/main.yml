@@ -22,6 +22,18 @@
 - name: Create Ceph user via Dashboard REST API
   ansible.builtin.include_tasks: ceph_api_user.yml
 
-# Mount Ceph filesystems
+# Mount Ceph filesystems (only if a keyring was created or already exists)
+- name: Re-check for Ceph keyring before mounting
+  ansible.builtin.find:
+    paths: /etc/ceph
+    patterns: "ceph.client.*.keyring"
+  register: ceph_keyring_final
+
 - name: Configure and mount Ceph filesystems
   ansible.builtin.include_tasks: ceph_mounts.yml
+  when: ceph_keyring_final.matched > 0
+
+- name: Skip Ceph mounts (no keyring)
+  ansible.builtin.debug:
+    msg: "⚠ No Ceph keyring found — skipping filesystem mounts. Create the user manually and re-run."
+  when: ceph_keyring_final.matched == 0
