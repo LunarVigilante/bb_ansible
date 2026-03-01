@@ -67,7 +67,7 @@
       - /opt/crowdsec/config/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
       - /opt/crowdsec/data:/var/lib/crowdsec/data
       - /var/log:/var/log:ro
-      - /opt/traefik/log:/var/log/traefik:ro
+      - /opt/traefik/log:/traefik-logs:ro
 
 - name: Enroll CrowdSec instance (optional — community blocklists)
   ansible.builtin.command: >
