@@ -216,7 +216,7 @@ beszel_primary_sensor: "coretemp_package_id_0"
 # ---------------------------------------------------------------------------
 # Traefik — Reverse Proxy
 # ---------------------------------------------------------------------------
-traefik_version: "v3.3"
+traefik_version: "v3.6"
 
 # TLS domains (each entry generates main + wildcard SAN). Traefik automatically grabs Let's Encrypt wildcards for all domains explicitly listed here.
 traefik_domains_media:
