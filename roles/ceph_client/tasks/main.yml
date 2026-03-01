@@ -29,6 +29,11 @@
         group: root
         mode: "0600"
 
+- name: Check if Ceph configuration already exists
+  ansible.builtin.stat:
+    path: /etc/ceph/ceph.conf
+  register: ceph_conf_stat
+
 - name: Fetch ceph.conf from cluster
   ansible.builtin.shell: |
     set -o pipefail
@@ -38,6 +43,7 @@
       "ceph config generate-minimal-conf" 2>/dev/null
   register: ceph_minimal_conf
   changed_when: false
+  when: not ceph_conf_stat.stat.exists
 
 - name: Deploy Ceph configuration
   ansible.builtin.copy:
@@ -46,6 +52,10 @@
     owner: root
     group: root
     mode: "0644"
+  when:
+    - not ceph_conf_stat.stat.exists
+    - ceph_minimal_conf.stdout is defined
+    - ceph_minimal_conf.stdout | length > 0
 
 # Create Ceph user and get keyring via Dashboard REST API
 - name: Create Ceph user via Dashboard REST API
