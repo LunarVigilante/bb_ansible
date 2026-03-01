@@ -59,6 +59,28 @@
   ansible.builtin.systemd:
     daemon_reload: true
 
+# Ensure SSH is never blocked by the ipset blacklist.
+# The blacklist script inserts a DROP rule at position 1 in INPUT chain.
+# We insert an ACCEPT for SSH at position 1 AFTER the blacklist loads,
+# so SSH traffic is always allowed before the blacklist is evaluated.
+- name: Deploy SSH exemption service for ipset blacklist
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Ensure SSH is exempt from ipset blacklist
+      After=ipset-update.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c 'iptables -C INPUT -p tcp --dport 22 -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -p tcp --dport 22 -j ACCEPT'
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/ipset-ssh-exempt.service
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Enable and start ipset blacklist timers
   ansible.builtin.systemd:
     name: "{{ item }}"
@@ -67,3 +89,4 @@
   loop:
     - ipset-blacklist-update.timer
     - ipset-update.timer
+    - ipset-ssh-exempt.service
