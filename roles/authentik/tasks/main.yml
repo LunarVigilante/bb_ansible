@@ -40,6 +40,14 @@
     chdir: /opt/authentik
   changed_when: true
 
+- name: Create DNS record for Authentik
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: "{{ authentik_domain | regex_replace('\\.' ~ base_domain ~ '$', '') }}"
+    cf_record_domain: "{{ base_domain }}"
+
 - name: Display Authentik connection info
   ansible.builtin.debug:
     msg: |

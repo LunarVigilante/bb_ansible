@@ -46,3 +46,27 @@
   args:
     chdir: /opt/compose/app_arrs
   changed_when: true
+
+- name: Create DNS records for arr instances
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: "{{ node_name }}.{{ item.name }}"
+    cf_record_domain: "{{ base_domain }}"
+  loop: >-
+    {{
+      sonarr_instances | default([]) +
+      radarr_instances | default([]) +
+      readarr_instances | default([]) +
+      lidarr_instances | default([]) +
+      bazarr_instances | default([]) +
+      prowlarr_instances | default([]) +
+      mylar_instances | default([]) +
+      seerr_instances | default([]) +
+      huntarr_instances | default([]) +
+      doplarr_instances | default([]) +
+      flaresolverr_instances | default([])
+    }}
+  loop_control:
+    label: "{{ node_name }}.{{ item.name }}.{{ base_domain }}"

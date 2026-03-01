@@ -28,3 +28,11 @@
   args:
     chdir: /opt/compose/portainer
   changed_when: true
+
+- name: Create DNS record for Portainer
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: portainer
+    cf_record_domain: "{{ base_domain }}"

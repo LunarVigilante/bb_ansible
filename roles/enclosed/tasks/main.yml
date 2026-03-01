@@ -27,3 +27,11 @@
   args:
     chdir: /opt/compose/enclosed
   changed_when: true
+
+- name: Create DNS record for Enclosed
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: bin
+    cf_record_domain: "{{ base_domain }}"

@@ -1,0 +1,23 @@
+---
+# roles/cloudflare_dns/tasks/create_record.yml
+# Reusable task — include from any role to create a Cloudflare DNS A record
+#
+# Required vars:
+#   cf_record_name: subdomain name (e.g. "portainer" or "svc-01.sonarr")
+#   cf_record_domain: zone domain (e.g. "{{ base_domain }}")
+#
+# Optional vars:
+#   cf_record_proxied: true/false (default: true)
+
+- name: "Create Cloudflare DNS A record for {{ cf_record_name }}.{{ cf_record_domain }}"
+  community.general.cloudflare_dns:
+    zone: "{{ cf_record_domain }}"
+    record: "{{ cf_record_name }}"
+    type: A
+    value: "{{ node_ip }}"
+    proxied: "{{ cf_record_proxied | default(true) }}"
+    solo: true
+    api_token: "{{ vault_cf_api_token }}"
+  when:
+    - vault_cf_api_token | default('') | length > 0
+    - vault_cf_api_token != 'CHANGE_ME'

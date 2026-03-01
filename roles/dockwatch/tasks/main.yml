@@ -38,6 +38,14 @@
     chdir: /opt/dockwatch
   changed_when: true
 
+- name: Create DNS record for Dockwatch
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: "{{ node_name }}.dockwatch"
+    cf_record_domain: "{{ base_domain }}"
+
 - name: Display Dockwatch info
   ansible.builtin.debug:
     msg: |

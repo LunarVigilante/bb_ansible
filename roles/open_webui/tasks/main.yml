@@ -43,3 +43,11 @@
   args:
     chdir: /opt/compose/open_webui
   changed_when: true
+
+- name: Create DNS record for Open WebUI
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: chat
+    cf_record_domain: "{{ base_domain }}"

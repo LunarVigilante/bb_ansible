@@ -73,3 +73,14 @@
   args:
     chdir: /opt/compose/observability_core
   changed_when: true
+
+- name: Create DNS records for Observability Core
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: "{{ item }}"
+    cf_record_domain: "{{ base_domain }}"
+  loop:
+    - grafana
+    - prom

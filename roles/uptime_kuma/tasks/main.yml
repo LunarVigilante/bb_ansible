@@ -26,3 +26,11 @@
   args:
     chdir: /opt/compose/uptime_kuma
   changed_when: true
+
+- name: Create DNS record for Uptime Kuma
+  ansible.builtin.include_role:
+    name: cloudflare_dns
+    tasks_from: create_record
+  vars:
+    cf_record_name: uptime
+    cf_record_domain: "{{ base_domain }}"
