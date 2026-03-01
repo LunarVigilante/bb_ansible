@@ -108,6 +108,24 @@ for candidate in $candidate_disks; do
 
     log_info "Evaluating untapped disk candidate: $candidate"
 
+    # Skip if drive is already an LVM Physical Volume
+    if pvs "$candidate" >/dev/null 2>&1; then
+        log_warn "Drive $candidate is already an LVM PV. Skipping."
+        continue
+    fi
+
+    # Skip if drive has partitions (it's probably in use)
+    if lsblk -n -o NAME "$candidate" 2>/dev/null | grep -q "^[[:space:]]"; then
+        log_warn "Drive $candidate has partitions. Skipping."
+        continue
+    fi
+
+    # Skip if drive has holders (mounted, dm, md, etc.)
+    if [[ -n "$(lsblk -n -o MOUNTPOINT "$candidate" 2>/dev/null | grep -v '^$')" ]]; then
+        log_warn "Drive $candidate has active mount points. Skipping."
+        continue
+    fi
+
     # Wipe existing signatures (filesystems, partition tables)
     log_info "Wiping $candidate..."
     wipefs -fa "$candidate" >/dev/null 2>&1
