@@ -124,3 +124,11 @@
         owner: root
         group: root
         mode: "0600"
+
+  rescue:
+    - name: Warn about Ceph user creation failure
+      ansible.builtin.debug:
+        msg:
+          - "⚠ Ceph user creation via Dashboard API failed."
+          - "You may need to create the Ceph user manually."
+          - "Run 'bb install node' again after fixing the Ceph Dashboard."
