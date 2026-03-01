@@ -31,6 +31,7 @@
 
 - name: Fetch ceph.conf from cluster
   ansible.builtin.shell: |
+    set -o pipefail
     # Extract host from dashboard URL (https://host:port -> host)
     CEPH_HOST=$(echo "{{ vault_ceph_dashboard_url }}" | sed -E 's|https?://([^:]+).*|\1|')
     ssh -i "{{ vault_ceph_ssh_key }}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${CEPH_HOST}" \

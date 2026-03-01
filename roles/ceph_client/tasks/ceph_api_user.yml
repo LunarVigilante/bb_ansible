@@ -39,21 +39,37 @@
 
     - name: Create Ceph user (with auto-increment on name collision)
       ansible.builtin.shell: |
+        set -o pipefail
         BASE_NAME="{{ node_name }}"
         TARGET_NAME="$BASE_NAME"
         COUNTER=1
         JWT="{{ ceph_jwt }}"
         API="{{ vault_ceph_dashboard_url }}"
+        NET="{{ node_ip }}/32"
 
         # Build the capabilities JSON
         {% if node_type in ['share', 'appbox'] %}
-        OSD_CAP="allow r tag cephfs data=cephfs network {{ node_ip }}/32, allow r tag cephfs data=embyfs network {{ node_ip }}/32, allow r tag cephfs data=plexfs network {{ node_ip }}/32, allow rwx tag cephfs data=bbfs network {{ node_ip }}/32"
-        MDS_CAP="allow r fsname=cephfs path=/ network {{ node_ip }}/32, allow r fsname=plexfs path=/ network {{ node_ip }}/32, allow r fsname=embyfs path=/ network {{ node_ip }}/32, allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32"
+        OSD_CAP="allow r tag cephfs data=cephfs network ${NET},"
+        OSD_CAP+=" allow r tag cephfs data=embyfs network ${NET},"
+        OSD_CAP+=" allow r tag cephfs data=plexfs network ${NET},"
+        OSD_CAP+=" allow rwx tag cephfs data=bbfs network ${NET}"
+        MDS_CAP="allow r fsname=cephfs path=/ network ${NET},"
+        MDS_CAP+=" allow r fsname=plexfs path=/ network ${NET},"
+        MDS_CAP+=" allow r fsname=embyfs path=/ network ${NET},"
+        MDS_CAP+=" allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network ${NET}"
         {% else %}
-        OSD_CAP="allow rw tag cephfs data=cephfs network {{ node_ip }}/32, allow r tag cephfs data=embyfs network {{ node_ip }}/32, allow r tag cephfs data=plexfs network {{ node_ip }}/32, allow rwx tag cephfs data=bbfs network {{ node_ip }}/32"
-        MDS_CAP="allow r fsname=cephfs path=/ network {{ node_ip }}/32, allow r fsname=plexfs path=/ network {{ node_ip }}/32, allow r fsname=embyfs path=/ network {{ node_ip }}/32, allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32"
+        OSD_CAP="allow rw tag cephfs data=cephfs network ${NET},"
+        OSD_CAP+=" allow r tag cephfs data=embyfs network ${NET},"
+        OSD_CAP+=" allow r tag cephfs data=plexfs network ${NET},"
+        OSD_CAP+=" allow rwx tag cephfs data=bbfs network ${NET}"
+        MDS_CAP="allow r fsname=cephfs path=/ network ${NET},"
+        MDS_CAP+=" allow r fsname=plexfs path=/ network ${NET},"
+        MDS_CAP+=" allow r fsname=embyfs path=/ network ${NET},"
+        MDS_CAP+=" allow rw fsname=bbfs path=/blackbeard network ${NET}"
         {% endif %}
-        MON_CAP="allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32"
+        MON_CAP="allow r fsname=cephfs, allow r fsname=plexfs,"
+        MON_CAP+=" allow r fsname=embyfs, allow r fsname=bbfs,"
+        MON_CAP+=" allow r network ${NET}"
 
         CAPS_JSON=$(cat <<EOJSON
         [
