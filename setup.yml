@@ -52,6 +52,7 @@
         vault_ceph_dashboard_url: "{{ ceph_dashboard_url }}"
         vault_ceph_dashboard_user: "{{ ceph_dashboard_user }}"
         vault_ceph_dashboard_password: "{{ ceph_dashboard_password }}"
+        vault_ceph_ssh_key: "{{ ceph_ssh_key | default('/root/.ssh/id_ed25519') }}"
         vault_cf_email: "{{ cf_email }}"
         vault_cf_auth_key: "{{ cf_auth_key }}"
         vault_cf_api_token: "{{ cf_api_token }}"

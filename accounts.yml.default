@@ -16,6 +16,7 @@ admin_password: ""          # CHANGE_ME
 ceph_dashboard_url: "https://ceph-dashboard.example.com:8443"
 ceph_dashboard_user: "admin"
 ceph_dashboard_password: ""
+ceph_ssh_key: "/root/.ssh/id_ed25519"       # SSH key for fetching ceph.conf from cluster
 
 # --- Cloudflare (Traefik ACME DNS-01) ---
 cf_email: "you@example.com"
