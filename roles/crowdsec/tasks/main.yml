@@ -42,6 +42,7 @@
     name: crowdsec
     image: "crowdsecurity/crowdsec:{{ crowdsec_version }}"
     state: started
+    recreate: true
     restart_policy: unless-stopped
     env:
       COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
