@@ -6,9 +6,6 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
-    mode: "0755"
   loop:
     - /mnt/ceph
     - /mnt/ceph/media
@@ -19,9 +16,6 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
-    mode: "0755"
   loop:
     - /mnt/ceph/plex
     - /mnt/ceph/plex/meta
@@ -31,9 +25,6 @@
   ansible.builtin.file:
     path: /mnt/ceph/emby
     state: directory
-    owner: root
-    group: root
-    mode: "0755"
   when: is_emby | bool
 
 # --- fstab entries ---
