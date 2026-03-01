@@ -121,7 +121,7 @@
 
     - name: Write Ceph keyring to file
       ansible.builtin.copy:
-        content: "{{ ceph_keyring_export.content }}"
+        content: "{{ ceph_keyring_export.json }}"
         dest: "/etc/ceph/ceph.client.{{ ceph_client_id }}.keyring"
         owner: root
         group: root
