@@ -240,6 +240,11 @@
 
           Next steps:
             1. SSH in as admin: ssh admin@{{ node_ip }}
+          {% if node_type == 'service' %}
+            2. Open Portainer: https://portainer.{{ base_domain }}
+            3. Add remote nodes via Portainer → Environments → Add Agent (IP:9001)
+          {% else %}
             2. Add node to Portainer: {{ node_ip }}:9001
             3. Deploy containers via Portainer templates
+          {% endif %}
       tags: ['always']
