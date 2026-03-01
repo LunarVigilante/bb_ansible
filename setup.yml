@@ -198,12 +198,15 @@
 
     - role: app_arrs
       tags: ['app_arrs', 'apps', 'core', 'node']
+      when: node_type not in ['service', 'feeder']
 
     - role: app_torrents
       tags: ['app_torrents', 'apps', 'core', 'node']
+      when: node_type not in ['service', 'feeder']
 
     - role: app_managers
       tags: ['app_managers', 'apps', 'core', 'node']
+      when: node_type not in ['service', 'feeder']
 
     - role: open_webui
       tags: ['open_webui', 'apps', 'core', 'node']
