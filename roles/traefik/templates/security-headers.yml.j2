@@ -19,10 +19,10 @@ http:
         referrerPolicy: "strict-origin-when-cross-origin"
 
         # ═══ HTTPS Enforcement (HSTS) ═══
-        # Force HTTPS via Strict-Transport-Security (1 year + subdomains + preload)
-        stsSeconds: 31536000
-        stsIncludeSubdomains: true
-        stsPreload: true
+        # Disabled — domain cannot enable HSTS globally on Cloudflare
+        # stsSeconds: 31536000
+        # stsIncludeSubdomains: true
+        # stsPreload: true
 
         # ═══ Content Security Policy ═══
         # Restricts script/style/img/font sources; blocks unsafe-inline by default
