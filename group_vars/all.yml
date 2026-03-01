@@ -155,8 +155,8 @@ timezone: "UTC"
 # Docker — Base Containers
 # ---------------------------------------------------------------------------
 docker_version: "5:28.5.2"     # Ubuntu APT epoch format; Arch version pinned via IgnorePkg
-portainer_agent_version: "2.19.4"
-portainer_version: "2.19.4"
+portainer_agent_version: "2.27.4"
+portainer_version: "2.27.4"
 
 # Docker networks — all created on every node (bridge networks are free)
 docker_networks:
