@@ -23,7 +23,7 @@
     mode: "0644"
 
 - name: Start Enclosed stack
-  ansible.builtin.command: docker compose up -d --remove-orphans
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/compose/enclosed
   changed_when: true

@@ -33,7 +33,7 @@
     mode: "0644"
 
 - name: Start Dockwatch
-  ansible.builtin.command: docker compose up -d
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/dockwatch
   changed_when: true

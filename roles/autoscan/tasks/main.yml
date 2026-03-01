@@ -35,7 +35,7 @@
     mode: "0644"
 
 - name: Start Autopulse
-  ansible.builtin.command: docker compose up -d
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/autopulse
   changed_when: true

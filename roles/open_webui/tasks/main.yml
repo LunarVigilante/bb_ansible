@@ -39,7 +39,7 @@
     mode: "0644"
 
 - name: Start Open WebUI stack
-  ansible.builtin.command: docker compose up -d --remove-orphans
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/compose/open_webui
   changed_when: true

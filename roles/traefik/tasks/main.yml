@@ -79,7 +79,7 @@
     mode: "0644"
 
 - name: Start Traefik
-  ansible.builtin.command: docker compose up -d
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/traefik
   changed_when: true

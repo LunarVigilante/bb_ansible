@@ -24,7 +24,7 @@
     mode: "0644"
 
 - name: Start Portainer
-  ansible.builtin.command: docker compose up -d --remove-orphans
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/compose/portainer
   changed_when: true

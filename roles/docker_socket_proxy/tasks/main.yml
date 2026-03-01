@@ -19,7 +19,7 @@
     mode: "0640"
 
 - name: Start docker-socket-proxy stack
-  ansible.builtin.command: docker compose up -d
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/docker_socket_proxy
   changed_when: true

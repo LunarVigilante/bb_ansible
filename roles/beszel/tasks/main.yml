@@ -97,7 +97,7 @@
   when: beszel_hub_key | default('') | length > 0
 
 - name: Start Beszel agent
-  ansible.builtin.command: docker compose up -d
+  ansible.builtin.command: docker compose up -d --force-recreate --remove-orphans
   args:
     chdir: /opt/beszel
   changed_when: true
