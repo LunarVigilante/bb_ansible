@@ -37,76 +37,70 @@
         ceph_jwt: "{{ ceph_auth.json.token }}"
       no_log: true
 
-    - name: Dynamically determine unused Ceph identity prefix
+    - name: Create Ceph user (with auto-increment on name collision)
       ansible.builtin.shell: |
         BASE_NAME="{{ node_name }}"
         TARGET_NAME="$BASE_NAME"
         COUNTER=1
+        JWT="{{ ceph_jwt }}"
+        API="{{ vault_ceph_dashboard_url }}"
 
-        while true; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                -X GET "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.${TARGET_NAME}" \
-                -H "Authorization: Bearer {{ ceph_jwt }}" \
-                -H "Accept: application/vnd.ceph.api.v1.0+json" -k)
+        # Build the capabilities JSON
+        {% if node_type in ['share', 'appbox'] %}
+        OSD_CAP="allow r tag cephfs data=cephfs network {{ node_ip }}/32, allow r tag cephfs data=embyfs network {{ node_ip }}/32, allow r tag cephfs data=plexfs network {{ node_ip }}/32, allow rwx tag cephfs data=bbfs network {{ node_ip }}/32"
+        MDS_CAP="allow r fsname=cephfs path=/ network {{ node_ip }}/32, allow r fsname=plexfs path=/ network {{ node_ip }}/32, allow r fsname=embyfs path=/ network {{ node_ip }}/32, allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32"
+        {% else %}
+        OSD_CAP="allow rw tag cephfs data=cephfs network {{ node_ip }}/32, allow r tag cephfs data=embyfs network {{ node_ip }}/32, allow r tag cephfs data=plexfs network {{ node_ip }}/32, allow rwx tag cephfs data=bbfs network {{ node_ip }}/32"
+        MDS_CAP="allow r fsname=cephfs path=/ network {{ node_ip }}/32, allow r fsname=plexfs path=/ network {{ node_ip }}/32, allow r fsname=embyfs path=/ network {{ node_ip }}/32, allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32"
+        {% endif %}
+        MON_CAP="allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32"
 
-            if [ "$HTTP_STATUS" == "404" ]; then
-                # User does not exist, safe to use this name
+        CAPS_JSON=$(cat <<EOJSON
+        [
+          {"entity": "mon", "cap": "${MON_CAP}"},
+          {"entity": "osd", "cap": "${OSD_CAP}"},
+          {"entity": "mds", "cap": "${MDS_CAP}"}
+        ]
+        EOJSON
+        )
+
+        while [ $COUNTER -le 10 ]; do
+            BODY="{\"user_entity\": \"client.${TARGET_NAME}\", \"capabilities\": ${CAPS_JSON}}"
+
+            HTTP_CODE=$(curl -s -o /tmp/ceph_api_response.json -w "%{http_code}" \
+                -X POST "${API}/api/cluster/user" \
+                -H "Authorization: Bearer ${JWT}" \
+                -H "Accept: application/vnd.ceph.api.v1.0+json" \
+                -H "Content-Type: application/json" \
+                -d "${BODY}" -k)
+
+            if [ "$HTTP_CODE" == "201" ] || [ "$HTTP_CODE" == "200" ]; then
                 echo "$TARGET_NAME"
                 exit 0
-            elif [ "$HTTP_STATUS" == "200" ] || [ "$HTTP_STATUS" == "500" ]; then
-                # User exists (500 may occur if user has broken caps). Increment suffix.
-                COUNTER=$((COUNTER + 1))
-                TARGET_NAME="${BASE_NAME}-v${COUNTER}"
+            elif [ "$HTTP_CODE" == "400" ]; then
+                DETAIL=$(cat /tmp/ceph_api_response.json)
+                if echo "$DETAIL" | grep -q "exists"; then
+                    # Name collision — increment and retry
+                    COUNTER=$((COUNTER + 1))
+                    TARGET_NAME="${BASE_NAME}-v${COUNTER}"
+                else
+                    echo "API error: $DETAIL" >&2
+                    exit 1
+                fi
             else
-                echo "Error: Unexpected HTTP status $HTTP_STATUS from Ceph API" >&2
+                echo "Unexpected HTTP $HTTP_CODE: $(cat /tmp/ceph_api_response.json)" >&2
                 exit 1
             fi
         done
-      register: ceph_identity_check
-      changed_when: false
 
-    - name: Set dynamic Ceph client ID
+        echo "Exceeded max retries for Ceph user creation" >&2
+        exit 1
+      register: ceph_user_result
+      changed_when: ceph_user_result.rc == 0
+
+    - name: Set Ceph client ID from creation result
       ansible.builtin.set_fact:
-        ceph_client_id: "{{ ceph_identity_check.stdout }}"
-
-    - name: Create Ceph user with capabilities
-      ansible.builtin.uri:
-        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user"
-        method: POST
-        body_format: json
-        headers:
-          Authorization: "Bearer {{ ceph_jwt }}"
-          Accept: "application/vnd.ceph.api.v1.0+json"
-          Content-Type: "application/json"
-        body:
-          user_entity: "client.{{ ceph_client_id }}"
-          capabilities:
-            - entity: mon
-              cap: >-
-                allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32
-            - entity: osd
-              cap: >-
-                {% if node_type in ['share', 'appbox'] %}
-                allow r tag cephfs data=cephfs network {{ node_ip }}/32,
-                {% else %}
-                allow rw tag cephfs data=cephfs network {{ node_ip }}/32,
-                {% endif %}
-                allow r tag cephfs data=embyfs network {{ node_ip }}/32,
-                allow r tag cephfs data=plexfs network {{ node_ip }}/32,
-                allow rwx tag cephfs data=bbfs network {{ node_ip }}/32
-            - entity: mds
-              cap: >-
-                allow r fsname=cephfs path=/ network {{ node_ip }}/32,
-                allow r fsname=plexfs path=/ network {{ node_ip }}/32,
-                allow r fsname=embyfs path=/ network {{ node_ip }}/32,
-                {% if node_type in ['share', 'appbox'] %}
-                allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32
-                {% else %}
-                allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32
-                {% endif %}
-        validate_certs: false
-        status_code: [200, 201]
-      register: ceph_user_create
+        ceph_client_id: "{{ ceph_user_result.stdout }}"
 
     - name: Export Ceph user keyring
       ansible.builtin.uri:

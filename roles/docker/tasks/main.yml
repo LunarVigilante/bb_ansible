@@ -74,6 +74,14 @@
     mode: "0644"
   notify: Reload systemd and restart docker
 
+- name: Ensure /etc/docker directory exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Deploy Docker daemon.json
   ansible.builtin.copy:
     content: |
