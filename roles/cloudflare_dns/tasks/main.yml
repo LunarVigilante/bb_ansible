@@ -1,0 +1,142 @@
+---
+# roles/cloudflare_dns/tasks/main.yml
+# Auto-create Cloudflare DNS A records for all services deployed on this node
+# Runs idempotently — existing records are updated, not duplicated
+
+- name: Skip DNS if no Cloudflare API token
+  ansible.builtin.debug:
+    msg: "Skipping DNS — no Cloudflare API token configured"
+  when: vault_cf_api_token | default('') | length == 0 or vault_cf_api_token == 'CHANGE_ME'
+
+- name: Create DNS records
+  when:
+    - vault_cf_api_token | default('') | length > 0
+    - vault_cf_api_token != 'CHANGE_ME'
+  block:
+    # --- Per-node records (all node types) ---
+
+    - name: "DNS: {{ node_name }}.dockwatch.{{ base_domain }}"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ node_name }}.dockwatch"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+
+    # --- Service node records ---
+
+    - name: "DNS: {{ authentik_domain }}"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ authentik_domain | regex_replace('\\.' ~ base_domain ~ '$', '') }}"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      when: node_type == 'service'
+
+    - name: "DNS: Service node subdomains"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ item }}"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      loop:
+        - portainer
+        - vault
+        - cloud
+        - audio
+        - home
+        - speed
+        - kavita
+        - chat
+        - bin
+        - uptime
+        - grafana
+        - prom
+      when: node_type == 'service'
+
+    # --- Share node records ---
+
+    - name: "DNS: {{ node_name }}.autopulse.{{ base_domain }}"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ node_name }}.autopulse"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      when: is_share | bool
+
+    # --- Data-driven Arr/Torrent/Manager records ---
+
+    - name: "DNS: Arr instance records"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ node_name }}.{{ item.name }}"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      loop: >-
+        {{
+          sonarr_instances | default([]) +
+          radarr_instances | default([]) +
+          readarr_instances | default([]) +
+          lidarr_instances | default([]) +
+          bazarr_instances | default([]) +
+          prowlarr_instances | default([]) +
+          mylar_instances | default([]) +
+          seerr_instances | default([]) +
+          huntarr_instances | default([]) +
+          doplarr_instances | default([]) +
+          flaresolverr_instances | default([])
+        }}
+      loop_control:
+        label: "{{ node_name }}.{{ item.name }}.{{ base_domain }}"
+      when: node_type not in ['service', 'feeder']
+
+    - name: "DNS: Torrent instance records"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ node_name }}.{{ item.name }}"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      loop: >-
+        {{
+          qbittorrent_instances | default([]) +
+          sabnzbd_instances | default([]) +
+          cross_seed_instances | default([]) +
+          autobrr_instances | default([]) +
+          omegabrr_instances | default([])
+        }}
+      loop_control:
+        label: "{{ node_name }}.{{ item.name }}.{{ base_domain }}"
+      when: node_type not in ['service', 'feeder']
+
+    - name: "DNS: Manager instance records"
+      community.general.cloudflare_dns:
+        zone: "{{ base_domain }}"
+        record: "{{ node_name }}.{{ item.name }}"
+        type: A
+        value: "{{ node_ip }}"
+        proxied: true
+        solo: true
+        api_token: "{{ vault_cf_api_token }}"
+      loop: >-
+        {{
+          notifiarr_instances | default([])
+        }}
+      loop_control:
+        label: "{{ node_name }}.{{ item.name }}.{{ base_domain }}"

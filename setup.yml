@@ -232,6 +232,10 @@
     - role: observability_agents
       tags: ['observability_agents', 'observability', 'core', 'node']
 
+    # ═══ DNS Record Management ═══
+    - role: cloudflare_dns
+      tags: ['dns', 'cloudflare_dns', 'core', 'node']
+
   post_tasks:
     - name: Provisioning complete
       ansible.builtin.debug:
