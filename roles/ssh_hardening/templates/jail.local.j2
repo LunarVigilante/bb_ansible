@@ -14,8 +14,8 @@ backend = systemd
 banaction = iptables-multiport
 banaction_allports = iptables-allports
 
-# Ignore localhost
-ignoreip = 127.0.0.1/8 ::1
+# Ignore localhost and this node's own IP
+ignoreip = 127.0.0.1/8 ::1 {{ node_ip }}
 
 # ═══ SSH Brute Force ═══
 [sshd]
@@ -26,9 +26,8 @@ maxretry = {{ fail2ban_maxretry }}
 bantime = {{ fail2ban_bantime }}
 findtime = {{ fail2ban_findtime }}
 
-# Aggressive mode — catches more attack patterns including auth failures
-# that don't always show in normal mode
-mode = aggressive
+# Normal mode — aggressive mode causes false positives with key-only auth
+mode = normal
 
 # ═══ Recidive — escalating ban for repeat offenders ═══
 # If an IP gets banned 3 times across ANY jail, ban it for 1 week

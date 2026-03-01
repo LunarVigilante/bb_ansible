@@ -190,7 +190,7 @@ ssh_pubkey_auth: "yes"
 
 # fail2ban
 fail2ban_bantime: 3600
-fail2ban_maxretry: 4
+fail2ban_maxretry: 10
 fail2ban_findtime: 300
 
 # ---------------------------------------------------------------------------
