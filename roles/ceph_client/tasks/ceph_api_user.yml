@@ -20,12 +20,15 @@
       ansible.builtin.uri:
         url: "{{ vault_ceph_dashboard_url }}/api/auth"
         method: POST
+        headers:
+          Content-Type: "application/json"
+          Accept: "application/vnd.ceph.api.v1.0+json"
         body_format: json
         body:
           username: "{{ vault_ceph_dashboard_user }}"
           password: "{{ vault_ceph_dashboard_password }}"
         validate_certs: false
-        status_code: 201
+        status_code: [200, 201]
       register: ceph_auth
       no_log: true
 

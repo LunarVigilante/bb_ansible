@@ -6,7 +6,7 @@
 # and safely append them into the primary LVM storage pool. Skips the boot drive.
 # =============================================================================
 
-set -e
+# Note: no set -e — some lsblk/lvs calls return non-zero in normal operation
 
 # Colors for log output
 CYAN='\033[0;36m'
@@ -115,10 +115,16 @@ for candidate in $candidate_disks; do
 
     # Enroll into LVM
     log_info "Creating LVM Physical Volume on $candidate..."
-    pvcreate -y "$candidate"
+    if ! pvcreate -y "$candidate"; then
+        log_err "pvcreate failed on $candidate"
+        continue
+    fi
 
     log_info "Extending Volume Group $root_vg with $candidate..."
-    vgextend "$root_vg" "$candidate"
+    if ! vgextend "$root_vg" "$candidate"; then
+        log_err "vgextend failed for $candidate"
+        continue
+    fi
     
     log_ok "Successfully appended $candidate to storage pool!"
     extended_pool=true
@@ -138,4 +144,4 @@ else
 fi
 
 # Show updated layout
-df -hBT xfs /
+df -h / 2>/dev/null || true
