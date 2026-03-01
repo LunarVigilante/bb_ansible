@@ -62,18 +62,22 @@ enrolled_disks=$(pvs --noheadings -o pv_name,vg_name | awk -v vg="$root_vg" '$2 
 # Identify the root physical disk (where /boot lives, etc.) by looking at partitions
 # We'll just grab all block devices that host the current PVs and exclude them.
 declare -A protected_disks
+log_info "Enrolled PVs: $enrolled_disks"
 for disk in $enrolled_disks; do
-    # Strip partition numbers to get base disk name (e.g. /dev/nvme0n1p3 -> /dev/nvme0n1)
-    base_disk=$(lsblk -no PKNAME "$disk" 2>/dev/null || echo "$disk")
-    while [[ -n "$base_disk" && "$base_disk" != *" "* ]]; do
-        protected_disks["/dev/$base_disk"]=1
-        base_disk=$(lsblk -no PKNAME "/dev/$base_disk" 2>/dev/null)
-    done
-    
-    # Also grab the raw string fallback
-    raw_base=$(echo "$disk" | sed 's/[0-9p]*$//')
-    protected_disks["$raw_base"]=1
+    # Protect the PV itself
     protected_disks["$disk"]=1
+
+    # Find parent disk (e.g. /dev/nvme1n1p3 -> nvme1n1)
+    parent=$(lsblk -no PKNAME "$disk" 2>/dev/null | head -1 || true)
+    if [[ -n "$parent" ]]; then
+        protected_disks["/dev/$parent"]=1
+    fi
+
+    # Regex fallback: strip trailing partition suffix
+    raw_base=$(echo "$disk" | sed 's/p\?[0-9]*$//')
+    if [[ -n "$raw_base" ]]; then
+        protected_disks["$raw_base"]=1
+    fi
 done
 
 # Also forcefully protect the disk hosting /boot

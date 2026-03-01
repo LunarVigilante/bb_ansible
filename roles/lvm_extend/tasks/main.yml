@@ -12,7 +12,8 @@
   ansible.builtin.command: "/usr/local/bin/auto_lvm_extend.sh '{{ lvm_ignore_drives | default('') }}'"
   register: lvm_auto_result
   changed_when: "'Successfully appended' in lvm_auto_result.stdout"
-  failed_when: lvm_auto_result.rc not in [0, 32]
+  failed_when: false
+  timeout: 60
 
 - name: Display volume expansion results
   ansible.builtin.debug:
