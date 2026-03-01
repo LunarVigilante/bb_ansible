@@ -104,13 +104,18 @@
 
     - name: Export Ceph user keyring
       ansible.builtin.uri:
-        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user/client.{{ ceph_client_id }}/export"
-        method: GET
+        url: "{{ vault_ceph_dashboard_url }}/api/cluster/user/export"
+        method: POST
+        body_format: json
         headers:
           Authorization: "Bearer {{ ceph_jwt }}"
           Accept: "application/vnd.ceph.api.v1.0+json"
+          Content-Type: "application/json"
+        body:
+          entities:
+            - "client.{{ ceph_client_id }}"
         validate_certs: false
-        status_code: 200
+        status_code: [200, 201]
         return_content: true
       register: ceph_keyring_export
 
