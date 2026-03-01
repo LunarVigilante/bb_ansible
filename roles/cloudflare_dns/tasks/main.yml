@@ -15,7 +15,7 @@
   block:
     # --- Per-node records (all node types) ---
 
-    - name: "DNS: {{ node_name }}.dockwatch.{{ base_domain }}"
+    - name: Create DNS A record for dockwatch on {{ node_name }}
       community.general.cloudflare_dns:
         zone: "{{ base_domain }}"
         record: "{{ node_name }}.dockwatch"
@@ -64,7 +64,7 @@
 
     # --- Share node records ---
 
-    - name: "DNS: {{ node_name }}.autopulse.{{ base_domain }}"
+    - name: Create DNS A record for autopulse on {{ node_name }}
       community.general.cloudflare_dns:
         zone: "{{ base_domain }}"
         record: "{{ node_name }}.autopulse"
