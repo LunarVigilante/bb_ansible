@@ -29,6 +29,14 @@
     group: root
     mode: "0644"
 
+- name: Ensure Traefik log directory exists for CrowdSec
+  ansible.builtin.file:
+    path: /opt/traefik/log
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Run CrowdSec container
   community.docker.docker_container:
     name: crowdsec
