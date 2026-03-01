@@ -86,9 +86,9 @@ declare -A TAG_DESCRIPTIONS=(
 CORE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,docker,traefik"
 
 # What "node" expands to (everything):
-NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,portainer,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma,dns"
+NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,dockwatch,diun,beszel,ipset,traefik,authentik,portainer,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma,dns"
 
-VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|portainer|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma|apps|dns"
+VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|dockwatch|diun|beszel|ipset|traefik|authentik|portainer|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma|apps|dns"
 
 # --- Functions ---
 
@@ -360,7 +360,7 @@ resolve_tags() {
             apps)
                 resolved="${resolved:+${resolved},}app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
                 ;;
-            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|portainer|dns|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma)
+            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|dockwatch|diun|beszel|ipset|traefik|authentik|portainer|dns|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma)
                 resolved="${resolved:+${resolved},}${tag}"
                 ;;
             *)
