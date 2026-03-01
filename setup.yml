@@ -178,6 +178,10 @@
       tags: ['authentik']
       when: node_type == 'service'
 
+    - role: portainer
+      tags: ['portainer']
+      when: node_type == 'service'
+
     - role: autoscan
       tags: ['autoscan']
       when: is_share | bool

@@ -1,0 +1,30 @@
+---
+# roles/portainer/tasks/main.yml
+# Deploy Portainer CE Server — central Docker management dashboard
+# Service node only (agents run on all other nodes via docker role)
+
+- name: Create Portainer data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/portainer
+    - /opt/portainer/data
+    - /opt/compose/portainer
+
+- name: Deploy Portainer Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/compose/portainer/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Portainer
+  ansible.builtin.command: docker compose up -d --remove-orphans
+  args:
+    chdir: /opt/compose/portainer
+  changed_when: true

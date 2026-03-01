@@ -1,0 +1,33 @@
+# Portainer CE Server — Managed by BB Ansible
+# Node: {{ node_name }}
+
+services:
+  portainer:
+    image: portainer/portainer-ce:{{ portainer_version }}
+    container_name: portainer
+    restart: always
+    cgroup_parent: system.slice
+    command: --admin-password-file /tmp/portainer_password
+    environment:
+      - TZ={{ timezone }}
+    volumes:
+      - /opt/portainer/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - proxy
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+      - "8000:8000"      # Edge Agent tunnel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.{{ base_domain }}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls=true"
+      - "traefik.http.routers.portainer.tls.certresolver=letsEncrypt"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "autoheal=true"
+
+networks:
+  proxy:
+    external: true

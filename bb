@@ -63,6 +63,7 @@ declare -A TAG_DESCRIPTIONS=(
     ["ipset"]="ipset IP blacklist service + weekly update timer"
     ["traefik"]="Traefik reverse proxy via Docker Compose + ACME certs"
     ["authentik"]="Authentik Single Sign-On (SSO) Stack"
+    ["portainer"]="Portainer CE Docker management server — Service node only"
     ["autoscan"]="Autopulse media notifier via Docker Compose (share nodes)"
     ["gluetun"]="Gluetun VPN via Docker Compose (Plex nodes)"
     ["finishing"]="Auth files, deployment archives, Emby staging timers"
@@ -84,9 +85,9 @@ declare -A TAG_DESCRIPTIONS=(
 CORE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,docker,traefik"
 
 # What "node" expands to (everything):
-NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
+NODE_TAGS="base,users,packages,ssh,tcp,lvm,ethtool,ceph,docker,crowdsec,diun,beszel,ipset,traefik,authentik,portainer,autoscan,gluetun,finishing,app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
 
-VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma|apps"
+VALID_TAGS="lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|portainer|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma|apps"
 
 # --- Functions ---
 
@@ -272,7 +273,7 @@ show_list() {
     echo ""
     echo -e "${MAGENTA}═══ Individual Tags ═══${NC}"
     echo ""
-    for tag in base users packages ssh tcp lvm ethtool ceph docker crowdsec diun beszel ipset traefik authentik autoscan gluetun finishing app_services app_arrs app_torrents app_managers open_webui enclosed; do
+    for tag in base users packages ssh tcp lvm ethtool ceph docker crowdsec diun beszel ipset traefik authentik portainer autoscan gluetun finishing app_services app_arrs app_torrents app_managers open_webui enclosed; do
         printf "  ${GREEN}%-12s${NC} %s\n" "${tag}" "${TAG_DESCRIPTIONS[$tag]}"
     done
     echo ""
@@ -358,7 +359,7 @@ resolve_tags() {
             apps)
                 resolved="${resolved:+${resolved},}app_services,app_arrs,app_torrents,app_managers,open_webui,enclosed,uptime_kuma"
                 ;;
-            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma)
+            lvm|base|users|packages|ssh|tcp|ethtool|ceph|docker|crowdsec|diun|beszel|ipset|traefik|authentik|portainer|autoscan|gluetun|finishing|app_services|app_arrs|app_torrents|app_managers|open_webui|enclosed|uptime_kuma)
                 resolved="${resolved:+${resolved},}${tag}"
                 ;;
             *)
