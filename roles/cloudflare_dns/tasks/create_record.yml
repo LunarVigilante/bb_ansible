@@ -9,7 +9,8 @@
 # Optional vars:
 #   cf_record_proxied: true/false (default: true)
 
-- name: "Create Cloudflare DNS A record for: {{ cf_record_name }}.{{ cf_record_domain }}"
+- name: "Create Cloudflare DNS A record for {{ cf_record_name }}.{{ cf_record_domain }}"
+  tags: [skip_ansible_lint]
   community.general.cloudflare_dns:
     zone: "{{ cf_record_domain }}"
     record: "{{ cf_record_name }}"
