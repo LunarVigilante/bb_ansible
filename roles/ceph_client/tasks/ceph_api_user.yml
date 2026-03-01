@@ -119,9 +119,15 @@
         return_content: true
       register: ceph_keyring_export
 
-    - name: Write Ceph keyring to file
+    - name: Extract key from export
+      ansible.builtin.set_fact:
+        ceph_key: "{{ ceph_keyring_export.json | regex_search('key = (.+)', '\\1') | first }}"
+
+    - name: Write minimal Ceph keyring to file
       ansible.builtin.copy:
-        content: "{{ ceph_keyring_export.json }}"
+        content: |
+          [client.{{ ceph_client_id }}]
+          	key = {{ ceph_key }}
         dest: "/etc/ceph/ceph.client.{{ ceph_client_id }}.keyring"
         owner: root
         group: root
