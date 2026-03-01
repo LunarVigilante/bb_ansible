@@ -1,0 +1,9 @@
+[Unit]
+Description=Jellyfin Deployment Copy Service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo cp /mnt/ceph/jellyfin/deployment.tar.gz /opt/jellyfindocker/deployment.tar.gz'
+
+[Install]
+WantedBy=multi-user.target

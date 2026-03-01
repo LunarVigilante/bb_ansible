@@ -65,6 +65,19 @@
     - /deployments
   when: is_emby | bool
 
+- name: Create Jellyfin directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/jellyfindocker
+    - /opt/jellyfindocker/jellyfinconfigs
+    - /deployments
+  when: is_jellyfin | bool
+
 # --- Copy deployment.tar.gz ---
 
 - name: Copy Plex deployment archive
@@ -86,6 +99,16 @@
     group: root
     mode: "0644"
   when: is_emby | bool
+
+- name: Copy Jellyfin deployment archive
+  ansible.builtin.copy:
+    src: /mnt/ceph/jellyfin/deployment.tar.gz
+    dest: /opt/jellyfindocker/deployment.tar.gz
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_jellyfin | bool
 
 # --- Copy PSQL Data (Plex only) ---
 
@@ -115,6 +138,15 @@
     mode: "0644"
   when: is_emby | bool
 
+- name: Deploy deployment-update service (Jellyfin)
+  ansible.builtin.template:
+    src: deployment-update-jellyfin.service.j2
+    dest: /etc/systemd/system/deployment-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: is_jellyfin | bool
+
 - name: Deploy deployment-update timer
   ansible.builtin.template:
     src: deployment-update.timer.j2
@@ -122,19 +154,19 @@
     owner: root
     group: root
     mode: "0644"
-  when: is_plex | bool or is_emby | bool
+  when: is_plex | bool or is_emby | bool or is_jellyfin | bool
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
-  when: is_plex | bool or is_emby | bool
+  when: is_plex | bool or is_emby | bool or is_jellyfin | bool
 
 - name: Enable and start deployment-update timer
   ansible.builtin.systemd:
     name: deployment-update.timer
     enabled: true
     state: started
-  when: is_plex | bool or is_emby | bool
+  when: is_plex | bool or is_emby | bool or is_jellyfin | bool
 
 # --- Emby staging update timer ---
 
