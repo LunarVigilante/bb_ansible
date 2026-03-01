@@ -37,7 +37,6 @@ services:
       - "--entrypoints.websecure.http.maxheaderbytes=1048576"
       - "--entrypoints.websecure.http.tls.certResolver=letsEncrypt"
       - "--entrypoints.websecure.http.tls.options=default"
-      - "--tls.options.default.minVersion=VersionTLS12"
 {% for domain in traefik_domains %}
       - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].main={{ domain.main }}"
       - "--entrypoints.websecure.http.tls.domains[{{ loop.index0 }}].sans=*.{{ domain.main }}"
