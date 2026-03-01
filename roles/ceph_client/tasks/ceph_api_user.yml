@@ -49,12 +49,12 @@
                 -H "Authorization: Bearer {{ ceph_jwt }}" \
                 -H "Accept: application/vnd.ceph.api.v1.0+json" -k)
 
-            if [ "$HTTP_STATUS" == "404" ] || [ "$HTTP_STATUS" == "500" ]; then
-                # User does not exist, safe to grab
+            if [ "$HTTP_STATUS" == "404" ]; then
+                # User does not exist, safe to use this name
                 echo "$TARGET_NAME"
                 exit 0
-            elif [ "$HTTP_STATUS" == "200" ]; then
-                # User exists. Increment suffix counter mathematically.
+            elif [ "$HTTP_STATUS" == "200" ] || [ "$HTTP_STATUS" == "500" ]; then
+                # User exists (500 may occur if user has broken caps). Increment suffix.
                 COUNTER=$((COUNTER + 1))
                 TARGET_NAME="${BASE_NAME}-v${COUNTER}"
             else
