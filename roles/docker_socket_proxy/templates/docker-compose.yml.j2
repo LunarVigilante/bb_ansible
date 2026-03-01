@@ -11,6 +11,7 @@ services:
     restart: unless-stopped
     cgroup_parent: system.slice
     environment:
+      - DOCKER_API_VERSION=1.44
       # Traefik strictly needs to GET configuration states mapping to exposed ports.
       - CONTAINERS=1
       - NETWORKS=1
@@ -35,6 +36,7 @@ services:
     restart: unless-stopped
     cgroup_parent: system.slice
     environment:
+      - DOCKER_API_VERSION=1.44
       # Dockwatch requires visibility into state layers to calculate hashes
       - CONTAINERS=1
       - IMAGES=1
