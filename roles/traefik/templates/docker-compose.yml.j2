@@ -63,6 +63,7 @@ services:
     environment:
       CF_API_EMAIL: "{{ vault_cf_email }}"
       CF_DNS_API_TOKEN: "{{ vault_cf_api_token }}"
+      DOCKER_API_VERSION: "1.44"
     ports:
       - "80:80/tcp"
       - "443:443/tcp"
