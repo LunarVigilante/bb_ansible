@@ -7,7 +7,6 @@ services:
     container_name: portainer
     restart: always
     cgroup_parent: system.slice
-    command: --admin-password-file /tmp/portainer_password
     environment:
       - TZ={{ timezone }}
     volumes:
