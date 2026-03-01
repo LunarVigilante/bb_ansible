@@ -37,12 +37,23 @@
     group: root
     mode: "0755"
 
+- name: Remove stale CrowdSec container if stopped
+  ansible.builtin.shell: |
+    set -o pipefail
+    if docker ps -a --format '{%raw%}{{.Names}}{%endraw%}' | grep -q '^crowdsec$'; then
+      if ! docker ps --format '{%raw%}{{.Names}}{%endraw%}' | grep -q '^crowdsec$'; then
+        docker rm -f crowdsec
+        echo "removed"
+      fi
+    fi
+  register: crowdsec_cleanup
+  changed_when: "'removed' in crowdsec_cleanup.stdout"
+
 - name: Run CrowdSec container
   community.docker.docker_container:
     name: crowdsec
     image: "crowdsecurity/crowdsec:{{ crowdsec_version }}"
     state: started
-    recreate: true
     restart_policy: unless-stopped
     env:
       COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
