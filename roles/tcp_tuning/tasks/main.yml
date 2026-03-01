@@ -17,6 +17,14 @@
     state: absent
   notify: Apply sysctl settings
 
+- name: Ensure limits.d directory exists
+  ansible.builtin.file:
+    path: /etc/security/limits.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Set file descriptor limits for media services
   ansible.builtin.copy:
     content: |
