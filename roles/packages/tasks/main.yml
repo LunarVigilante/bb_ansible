@@ -27,7 +27,8 @@
 - name: Grant admin passwordless sudo for pacman (required by yay)
   ansible.builtin.copy:
     dest: /etc/sudoers.d/yay-admin
-    content: "admin ALL=(ALL) NOPASSWD: /usr/bin/pacman\n"
+    content: |
+      admin ALL=(ALL) NOPASSWD: /usr/bin/pacman
     mode: "0440"
     validate: "visudo -cf %s"
   when: ansible_facts['os_family'] == "Archlinux"

@@ -41,7 +41,7 @@
 
 - name: Deploy Ceph configuration
   ansible.builtin.copy:
-    content: "{{ ceph_minimal_conf.stdout }}\n"
+    content: "{{ ceph_minimal_conf.stdout ~ '\n' }}"
     dest: /etc/ceph/ceph.conf
     owner: root
     group: root
