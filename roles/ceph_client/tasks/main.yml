@@ -10,9 +10,18 @@
     group: root
     mode: "0755"
 
+- name: Fetch ceph.conf from cluster
+  ansible.builtin.shell: |
+    # Extract host from dashboard URL (https://host:port -> host)
+    CEPH_HOST=$(echo "{{ vault_ceph_dashboard_url }}" | sed -E 's|https?://([^:]+).*|\1|')
+    ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${CEPH_HOST}" \
+      "ceph config generate-minimal-conf" 2>/dev/null
+  register: ceph_minimal_conf
+  changed_when: false
+
 - name: Deploy Ceph configuration
-  ansible.builtin.template:
-    src: ceph.conf.j2
+  ansible.builtin.copy:
+    content: "{{ ceph_minimal_conf.stdout }}\n"
     dest: /etc/ceph/ceph.conf
     owner: root
     group: root
