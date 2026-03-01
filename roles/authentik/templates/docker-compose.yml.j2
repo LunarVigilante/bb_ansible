@@ -63,7 +63,7 @@ services:
       - "traefik.http.routers.authentik.entrypoints=websecure"
       - "traefik.http.routers.authentik.tls=true"
       - "traefik.http.routers.authentik.tls.certresolver=letsEncrypt"
-      - "traefik.http.services.authentik.loadbalancer.server.port=9005"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
     depends_on:
       postgresql:
         condition: service_healthy
