@@ -122,16 +122,19 @@
     owner: root
     group: root
     mode: "0644"
+  when: is_plex | bool or is_emby | bool
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
+  when: is_plex | bool or is_emby | bool
 
 - name: Enable and start deployment-update timer
   ansible.builtin.systemd:
     name: deployment-update.timer
     enabled: true
     state: started
+  when: is_plex | bool or is_emby | bool
 
 # --- Emby staging update timer ---
 
