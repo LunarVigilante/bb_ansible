@@ -81,26 +81,29 @@
         body:
           user_entity: "client.{{ ceph_client_id }}"
           capabilities:
-            mds: >-
-              allow r fsname=cephfs path=/ network {{ node_ip }}/32,
-              allow r fsname=plexfs path=/ network {{ node_ip }}/32,
-              allow r fsname=embyfs path=/ network {{ node_ip }}/32,
-              {% if node_type in ['share', 'appbox'] %}
-              allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32
-              {% else %}
-              allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32
-              {% endif %}
-            mon: >-
-              allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32
-            osd: >-
-              {% if node_type in ['share', 'appbox'] %}
-              allow r tag cephfs data=cephfs network {{ node_ip }}/32,
-              {% else %}
-              allow rw tag cephfs data=cephfs network {{ node_ip }}/32,
-              {% endif %}
-              allow r tag cephfs data=embyfs network {{ node_ip }}/32,
-              allow r tag cephfs data=plexfs network {{ node_ip }}/32,
-              allow rwx tag cephfs data=bbfs network {{ node_ip }}/32
+            - entity: mon
+              cap: >-
+                allow r fsname=cephfs, allow r fsname=plexfs, allow r fsname=embyfs, allow r fsname=bbfs, allow r network {{ node_ip }}/32
+            - entity: osd
+              cap: >-
+                {% if node_type in ['share', 'appbox'] %}
+                allow r tag cephfs data=cephfs network {{ node_ip }}/32,
+                {% else %}
+                allow rw tag cephfs data=cephfs network {{ node_ip }}/32,
+                {% endif %}
+                allow r tag cephfs data=embyfs network {{ node_ip }}/32,
+                allow r tag cephfs data=plexfs network {{ node_ip }}/32,
+                allow rwx tag cephfs data=bbfs network {{ node_ip }}/32
+            - entity: mds
+              cap: >-
+                allow r fsname=cephfs path=/ network {{ node_ip }}/32,
+                allow r fsname=plexfs path=/ network {{ node_ip }}/32,
+                allow r fsname=embyfs path=/ network {{ node_ip }}/32,
+                {% if node_type in ['share', 'appbox'] %}
+                allow rw fsname=bbfs path=/blackbeard/{{ node_name }} network {{ node_ip }}/32
+                {% else %}
+                allow rw fsname=bbfs path=/blackbeard network {{ node_ip }}/32
+                {% endif %}
         validate_certs: false
         status_code: [200, 201]
       register: ceph_user_create
